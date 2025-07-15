@@ -44,7 +44,7 @@ func (s *Service) Start() error {
 	}
 
 	if s.logger != nil {
-		s.logger.Info("Starting Nexus gateway", map[string]interface{}{
+		s.logger.Info("Starting Nexus gateway", map[string]any{
 			"listen_addr": listenAddr,
 			"target_url":  config.TargetURL,
 		})
@@ -76,7 +76,7 @@ func (s *Service) Stop() error {
 	}
 
 	if s.logger != nil {
-		s.logger.Info("Stopping Nexus gateway", map[string]interface{}{})
+		s.logger.Info("Stopping Nexus gateway", map[string]any{})
 	}
 
 	// Create context with timeout for graceful shutdown
@@ -87,15 +87,15 @@ func (s *Service) Stop() error {
 }
 
 // Health implements interfaces.Gateway.Health
-func (s *Service) Health() map[string]interface{} {
-	health := map[string]interface{}{
+func (s *Service) Health() map[string]any {
+	health := map[string]any{
 		"status":    "healthy",
 		"timestamp": time.Now().Format(time.RFC3339),
 	}
 
 	config := s.container.Config()
 	if config != nil {
-		health["config"] = map[string]interface{}{
+		health["config"] = map[string]any{
 			"listen_port": config.ListenPort,
 			"target_url":  config.TargetURL,
 		}

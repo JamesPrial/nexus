@@ -81,7 +81,7 @@ type HTTPProxy struct {
 // ServeHTTP implements the http.Handler interface
 func (h *HTTPProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if h.Logger != nil {
-		h.Logger.Debug("Proxying request", map[string]interface{}{
+		h.Logger.Debug("Proxying request", map[string]any{
 			"method": r.Method,
 			"path":   r.URL.Path,
 			"host":   r.Host,
@@ -105,7 +105,7 @@ func (h *HTTPProxy) SetTarget(targetURL string) error {
 	h.ReverseProxy = httputil.NewSingleHostReverseProxy(target)
 	
 	if h.Logger != nil {
-		h.Logger.Info("Updated proxy target", map[string]interface{}{
+		h.Logger.Info("Updated proxy target", map[string]any{
 			"target": targetURL,
 		})
 	}
@@ -143,7 +143,7 @@ func (r *rateLimiterWithLogger) Reset(apiKey string) {
 	delete(r.clients, apiKey)
 	
 	if r.logger != nil {
-		r.logger.Info("Reset rate limit for API key", map[string]interface{}{
+		r.logger.Info("Reset rate limit for API key", map[string]any{
 			"api_key_prefix": apiKey[:min(len(apiKey), 10)],
 		})
 	}
@@ -157,7 +157,7 @@ func (r *rateLimiterWithLogger) Middleware(next http.Handler) http.Handler {
 		apiKey := req.Header.Get("Authorization")
 		
 		if r.logger != nil {
-			r.logger.Debug("Rate limit check", map[string]interface{}{
+			r.logger.Debug("Rate limit check", map[string]any{
 				"api_key_prefix": apiKey[:min(len(apiKey), 10)],
 				"method":         req.Method,
 				"path":           req.URL.Path,
@@ -212,7 +212,7 @@ func (t *tokenLimiterWithDeps) Middleware(next http.Handler) http.Handler {
 		tokenCount, err := t.tokenCounter.CountTokens(r)
 		if err != nil {
 			if t.logger != nil {
-				t.logger.Error("Token counting failed", map[string]interface{}{
+				t.logger.Error("Token counting failed", map[string]any{
 					"error":          err.Error(),
 					"api_key_prefix": apiKey[:min(len(apiKey), 10)],
 				})
@@ -223,7 +223,7 @@ func (t *tokenLimiterWithDeps) Middleware(next http.Handler) http.Handler {
 
 		if !limiter.AllowN(time.Now(), tokenCount) {
 			if t.logger != nil {
-				t.logger.Warn("Token limit exceeded", map[string]interface{}{
+				t.logger.Warn("Token limit exceeded", map[string]any{
 					"api_key_prefix": apiKey[:min(len(apiKey), 10)],
 					"tokens_needed":  tokenCount,
 					"tokens_available": limiter.Tokens(),
@@ -234,7 +234,7 @@ func (t *tokenLimiterWithDeps) Middleware(next http.Handler) http.Handler {
 		}
 
 		if t.logger != nil {
-			t.logger.Debug("Token limit check passed", map[string]interface{}{
+			t.logger.Debug("Token limit check passed", map[string]any{
 				"api_key_prefix": apiKey[:min(len(apiKey), 10)],
 				"tokens_used":    tokenCount,
 				"tokens_remaining": limiter.Tokens(),
@@ -267,7 +267,7 @@ func (t *tokenLimiterWithDeps) Reset(apiKey string) {
 	delete(t.clients, apiKey)
 	
 	if t.logger != nil {
-		t.logger.Info("Reset token limit for API key", map[string]interface{}{
+		t.logger.Info("Reset token limit for API key", map[string]any{
 			"api_key_prefix": apiKey[:min(len(apiKey), 10)],
 		})
 	}

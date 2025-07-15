@@ -58,16 +58,16 @@ type Gateway interface {
 	Stop() error
 	
 	// Health returns the health status of the gateway
-	Health() map[string]interface{}
+	Health() map[string]any
 }
 
 
 // Logger provides structured logging
 type Logger interface {
-	Debug(msg string, fields map[string]interface{})
-	Info(msg string, fields map[string]interface{})
-	Warn(msg string, fields map[string]interface{})
-	Error(msg string, fields map[string]interface{})
+	Debug(msg string, fields map[string]any)
+	Info(msg string, fields map[string]any)
+	Warn(msg string, fields map[string]any)
+	Error(msg string, fields map[string]any)
 }
 
 // Container holds application dependencies and provides dependency injection

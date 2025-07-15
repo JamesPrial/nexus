@@ -31,38 +31,38 @@ func NewStandardLogger(level Level) interfaces.Logger {
 }
 
 // Debug logs debug messages
-func (s *StandardLogger) Debug(msg string, fields map[string]interface{}) {
+func (s *StandardLogger) Debug(msg string, fields map[string]any) {
 	if s.level <= LevelDebug {
 		s.log("DEBUG", msg, fields)
 	}
 }
 
 // Info logs info messages
-func (s *StandardLogger) Info(msg string, fields map[string]interface{}) {
+func (s *StandardLogger) Info(msg string, fields map[string]any) {
 	if s.level <= LevelInfo {
 		s.log("INFO", msg, fields)
 	}
 }
 
 // Warn logs warning messages
-func (s *StandardLogger) Warn(msg string, fields map[string]interface{}) {
+func (s *StandardLogger) Warn(msg string, fields map[string]any) {
 	if s.level <= LevelWarn {
 		s.log("WARN", msg, fields)
 	}
 }
 
 // Error logs error messages
-func (s *StandardLogger) Error(msg string, fields map[string]interface{}) {
+func (s *StandardLogger) Error(msg string, fields map[string]any) {
 	if s.level <= LevelError {
 		s.log("ERROR", msg, fields)
 	}
 }
 
 // log is the internal logging method
-func (s *StandardLogger) log(level, msg string, fields map[string]interface{}) {
+func (s *StandardLogger) log(level, msg string, fields map[string]any) {
 	timestamp := time.Now().Format(time.RFC3339)
 	
-	entry := map[string]interface{}{
+	entry := map[string]any{
 		"timestamp": timestamp,
 		"level":     level,
 		"message":   msg,
@@ -92,13 +92,13 @@ func NewNoOpLogger() interfaces.Logger {
 }
 
 // Debug does nothing
-func (n *NoOpLogger) Debug(msg string, fields map[string]interface{}) {}
+func (n *NoOpLogger) Debug(msg string, fields map[string]any) {}
 
 // Info does nothing
-func (n *NoOpLogger) Info(msg string, fields map[string]interface{}) {}
+func (n *NoOpLogger) Info(msg string, fields map[string]any) {}
 
 // Warn does nothing
-func (n *NoOpLogger) Warn(msg string, fields map[string]interface{}) {}
+func (n *NoOpLogger) Warn(msg string, fields map[string]any) {}
 
 // Error does nothing
-func (n *NoOpLogger) Error(msg string, fields map[string]interface{}) {}
+func (n *NoOpLogger) Error(msg string, fields map[string]any) {}

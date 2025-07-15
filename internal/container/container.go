@@ -7,19 +7,20 @@ import (
 	"net/url"
 
 	"github.com/jamesprial/nexus/internal/interfaces"
+	"github.com/jamesprial/nexus/internal/logging"
 	"github.com/jamesprial/nexus/internal/proxy"
 	"golang.org/x/time/rate"
 )
 
 // Container holds all application dependencies
 type Container struct {
-	configLoader  interfaces.ConfigLoader
-	rateLimiter   interfaces.RateLimiter
-	tokenLimiter  interfaces.RateLimiter
-	tokenCounter  interfaces.TokenCounter
-	proxy         interfaces.Proxy
-	logger        interfaces.Logger
-	config        *interfaces.Config
+	configLoader interfaces.ConfigLoader
+	rateLimiter  interfaces.RateLimiter
+	tokenLimiter interfaces.RateLimiter
+	tokenCounter interfaces.TokenCounter
+	proxy        interfaces.Proxy
+	logger       interfaces.Logger
+	config       *interfaces.Config
 }
 
 // New creates a new dependency injection container
@@ -78,12 +79,17 @@ func (c *Container) Initialize() error {
 	if c.configLoader == nil {
 		return fmt.Errorf("config loader not set")
 	}
-	
+
 	cfg, err := c.configLoader.Load()
 	if err != nil {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 	c.config = cfg
+
+	// Set up logger if not already set
+	if c.logger == nil {
+		c.logger = logging.NewSlogLogger(cfg.LogLevel)
+	}
 
 	// Set up token counter
 	c.tokenCounter = &proxy.DefaultTokenCounter{}
@@ -100,7 +106,7 @@ func (c *Container) Initialize() error {
 	if tokenBurst < 100 {
 		tokenBurst = 100
 	}
-	
+
 	c.tokenLimiter = proxy.NewTokenLimiterWithDeps(
 		cfg.Limits.ModelTokensPerMinute,
 		tokenBurst,
@@ -113,7 +119,7 @@ func (c *Container) Initialize() error {
 	if err != nil {
 		return fmt.Errorf("failed to parse target URL: %w", err)
 	}
-	
+
 	reverseProxy := httputil.NewSingleHostReverseProxy(target)
 	c.proxy = &proxy.HTTPProxy{
 		ReverseProxy: reverseProxy,
@@ -133,6 +139,6 @@ func (c *Container) BuildHandler() http.Handler {
 	var handler http.Handler = http.HandlerFunc(c.proxy.ServeHTTP)
 	handler = c.rateLimiter.Middleware(handler)
 	handler = c.tokenLimiter.Middleware(handler)
-	
+
 	return handler
 }

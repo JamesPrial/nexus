@@ -11,7 +11,6 @@ import (
 	"github.com/jamesprial/nexus/internal/config"
 	"github.com/jamesprial/nexus/internal/container"
 	"github.com/jamesprial/nexus/internal/gateway"
-	"github.com/jamesprial/nexus/internal/logging"
 )
 
 // Build-time variables (set by ldflags)
@@ -23,10 +22,6 @@ var (
 func run() error {
 	// Create dependency injection container
 	cont := container.New()
-
-	// Set up logger
-	logger := logging.NewStandardLogger(logging.LevelInfo)
-	cont.SetLogger(logger)
 
 	// Set up configuration loader
 	configPath := "config.yaml"
@@ -41,6 +36,9 @@ func run() error {
 	if err := cont.Initialize(); err != nil {
 		return err
 	}
+
+	// Get logger from container after initialization
+	logger := cont.Logger()
 
 	// Create gateway service
 	gatewayService := gateway.NewService(cont)

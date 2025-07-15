@@ -13,6 +13,7 @@ type ConfigLoader interface {
 type Config struct {
 	ListenPort int
 	TargetURL  string
+	LogLevel   string `yaml:"log_level"`
 	Limits     Limits
 }
 
@@ -26,10 +27,10 @@ type Limits struct {
 type RateLimiter interface {
 	// Middleware returns HTTP middleware that enforces rate limits
 	Middleware(next http.Handler) http.Handler
-	
+
 	// GetLimit returns the current limit for an API key
 	GetLimit(apiKey string) (allowed bool, remaining int)
-	
+
 	// Reset clears the rate limit state for an API key
 	Reset(apiKey string)
 }
@@ -44,7 +45,7 @@ type TokenCounter interface {
 type Proxy interface {
 	// ServeHTTP implements http.Handler to proxy requests
 	ServeHTTP(w http.ResponseWriter, r *http.Request)
-	
+
 	// SetTarget changes the upstream target URL
 	SetTarget(targetURL string) error
 }
@@ -53,14 +54,13 @@ type Proxy interface {
 type Gateway interface {
 	// Start begins serving HTTP requests
 	Start() error
-	
+
 	// Stop gracefully shuts down the gateway
 	Stop() error
-	
+
 	// Health returns the health status of the gateway
 	Health() map[string]any
 }
-
 
 // Logger provides structured logging
 type Logger interface {
@@ -74,10 +74,10 @@ type Logger interface {
 type Container interface {
 	// Config returns the loaded configuration
 	Config() *Config
-	
+
 	// Logger returns the logger instance
 	Logger() Logger
-	
+
 	// BuildHandler creates the complete middleware chain
 	BuildHandler() http.Handler
 }

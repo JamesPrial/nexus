@@ -108,7 +108,26 @@ Nexus is configured using a `config.yaml` file in the root of the project. The f
 -   `limits`:
     -   `requests_per_second`: The number of requests per second to allow for each API key.
     -   `burst`: The number of requests that can be sent in a burst for each API key.
-    -   `model_tokens_per_minute`: (Coming Soon) The number of language model tokens to allow per minute for each API key.
+    -   `model_tokens_per_minute`: The number of language model tokens to allow per minute for each API key.
+
+## Usage
+
+For detailed usage examples and integration guides, see [USAGE.md](USAGE.md).
+
+**Quick Start:**
+```python
+import openai
+
+# Point your app to Nexus instead of OpenAI directly
+openai.api_base = "http://localhost:8080/v1"
+openai.api_key = "sk-your-openai-key"
+
+# Your existing code works unchanged
+response = openai.ChatCompletion.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello!"}]
+)
+```
 
 ## Contributing
 

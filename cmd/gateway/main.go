@@ -62,7 +62,11 @@ func run() error {
 	logger.Info("Shutdown signal received", map[string]any{})
 
 	// Graceful shutdown
-	return gatewayService.Stop()
+	if err := gatewayService.Stop(); err != nil {
+		logger.Error("Failed to stop gateway service", map[string]any{"error": err})
+		return err
+	}
+	return nil
 }
 
 func main() {

@@ -12,7 +12,7 @@ func TestTokenLimiter(t *testing.T) {
 	limiter := NewTokenLimiter(60, 10) // 60 tokens per minute = 1 token per second
 	
 	// Verify internal rate conversion
-	expectedTPS := 60.0 / 60.0 // 1 token per second
+	expectedTPS := 1.0 // 60 tokens per minute = 1 token per second
 	if limiter.tps != expectedTPS {
 		t.Errorf("Expected tokens per second %f, got %f", expectedTPS, limiter.tps)
 	}

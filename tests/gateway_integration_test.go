@@ -48,7 +48,11 @@ func TestGatewayIntegration(t *testing.T) {
 	if err := gatewayService.Start(); err != nil {
 		t.Fatalf("Failed to start gateway: %v", err)
 	}
-	defer gatewayService.Stop()
+	defer func() {
+		if err := gatewayService.Stop(); err != nil {
+			t.Errorf("Failed to stop gateway service: %v", err)
+		}
+	}()
 
 	// Give the server a moment to start
 	time.Sleep(100 * time.Millisecond)

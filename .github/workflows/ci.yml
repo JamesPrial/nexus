@@ -22,17 +22,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go-version }}
-          cache: false
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-${{ matrix.go-version }}-
 
       - name: Download dependencies
         run: make deps
@@ -63,17 +52,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-          cache: false
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-1.23-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-1.23-
 
       - name: Download dependencies
         run: make deps
@@ -99,17 +77,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-          cache: false
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-1.23-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-1.23-
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
@@ -129,17 +96,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.23'
-          cache: false
-
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-1.23-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-1.23-
 
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master

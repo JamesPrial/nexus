@@ -1,16 +1,16 @@
 package tests
 
 import (
-	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/jamesprial/nexus/internal/config"
+	"github.com/jamesprial/nexus/internal/container"
 	"github.com/jamesprial/nexus/internal/gateway"
+	"github.com/jamesprial/nexus/internal/interfaces"
+	"github.com/jamesprial/nexus/internal/logging"
 )
 
 func TestGatewayIntegration(t *testing.T) {
@@ -20,41 +20,38 @@ func TestGatewayIntegration(t *testing.T) {
 	}))
 	defer mockServer.Close()
 
-	// --- Create a temporary config file pointing to the mock server ---
-	content := fmt.Sprintf(`
-listen_port: 8081
-target_url: "%s"
-limits:
-  requests_per_second: 1
-  burst: 1
-  model_tokens_per_minute: 1000
-`, mockServer.URL)
-
-	tmpDir, err := ioutil.TempDir("", "nexus-tests")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	configPath := filepath.Join(tmpDir, "config.yaml")
-	if err := ioutil.WriteFile(configPath, []byte(content), 0644); err != nil {
-		t.Fatalf("Failed to write temp config file: %v", err)
+	// --- Create test configuration ---
+	testConfig := &interfaces.Config{
+		ListenPort: 8081,
+		TargetURL:  mockServer.URL,
+		Limits: interfaces.Limits{
+			RequestsPerSecond:    1,
+			Burst:                1,
+			ModelTokensPerMinute: 1000,
+		},
 	}
 
-	// --- Run the gateway in a goroutine ---
-	go func() {
-		// We need to change the working directory so the gateway can find the config file.
-		// This is another hacky part of this test.
-		originalWD, _ := os.Getwd()
-		os.Chdir(tmpDir)
-		defer os.Chdir(originalWD)
+	// --- Set up dependency injection container ---
+	cont := container.New()
+	cont.SetLogger(logging.NewNoOpLogger()) // Use silent logger for tests
+	cont.SetConfigLoader(config.NewMemoryLoader(testConfig))
 
-		if err := gateway.Run(); err != nil {
-			// We expect the server to be closed by the test, so we can ignore this error.
-			// A more robust solution would be to have a way to gracefully shut down the server.
-		}
-	}()
-	time.Sleep(100 * time.Millisecond) // Give the server a moment to start.
+	// Initialize container
+	if err := cont.Initialize(); err != nil {
+		t.Fatalf("Failed to initialize container: %v", err)
+	}
+
+	// Create gateway service
+	gatewayService := gateway.NewService(cont)
+
+	// Start the gateway
+	if err := gatewayService.Start(); err != nil {
+		t.Fatalf("Failed to start gateway: %v", err)
+	}
+	defer gatewayService.Stop()
+
+	// Give the server a moment to start
+	time.Sleep(100 * time.Millisecond)
 
 	// --- Create a client to send requests to the gateway ---
 	client := &http.Client{}

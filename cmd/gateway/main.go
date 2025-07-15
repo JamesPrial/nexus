@@ -20,7 +20,7 @@ var (
 	BuildTime = "unknown"
 )
 
-func mainWithDI() error {
+func run() error {
 	// Create dependency injection container
 	cont := container.New()
 
@@ -50,7 +50,7 @@ func mainWithDI() error {
 		return err
 	}
 
-	logger.Info("Nexus gateway started with dependency injection", map[string]interface{}{
+	logger.Info("Nexus gateway started successfully", map[string]interface{}{
 		"config_path": configPath,
 	})
 
@@ -70,7 +70,6 @@ func main() {
 	var (
 		showVersion = flag.Bool("version", false, "Show version information")
 		showHelp    = flag.Bool("help", false, "Show help information")
-		useDI       = flag.Bool("di", false, "Use dependency injection architecture")
 	)
 	flag.Parse()
 
@@ -91,33 +90,21 @@ func main() {
 		fmt.Printf("  %s [options]\n", os.Args[0])
 		fmt.Println()
 		fmt.Println("Options:")
-		fmt.Println("  -di           Use dependency injection architecture")
 		fmt.Println("  -help         Show help information")
 		fmt.Println("  -version      Show version information")
 		fmt.Println()
 		fmt.Println("Environment Variables:")
 		fmt.Println("  CONFIG_PATH   Path to configuration file (default: config.yaml)")
-		fmt.Println("  USE_DI        Use dependency injection architecture (default: false)")
 		fmt.Println()
 		fmt.Println("Examples:")
-		fmt.Printf("  %s                    # Start with legacy architecture\n", os.Args[0])
-		fmt.Printf("  %s -di               # Start with dependency injection\n", os.Args[0])
-		fmt.Printf("  USE_DI=true %s       # Start with DI via environment\n", os.Args[0])
+		fmt.Printf("  %s                    # Start the gateway\n", os.Args[0])
+		fmt.Printf("  CONFIG_PATH=/etc/nexus/config.yaml %s\n", os.Args[0])
 		return
 	}
 
-	// Determine architecture to use
-	useNewArch := *useDI || os.Getenv("USE_DI") == "true"
-	
 	log.Printf("Nexus API Gateway %s (built %s)", Version, BuildTime)
 	
-	if useNewArch {
-		log.Println("Starting with dependency injection architecture...")
-		if err := mainWithDI(); err != nil {
-			log.Fatalf("failed to run gateway with DI: %v", err)
-		}
-	} else {
-		log.Println("Starting with legacy architecture...")
-		mainLegacy()
+	if err := run(); err != nil {
+		log.Fatalf("failed to run gateway: %v", err)
 	}
 }

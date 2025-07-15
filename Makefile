@@ -124,12 +124,6 @@ dev:
 	@echo "Starting development server..."
 	$(GOCMD) run ./cmd/gateway
 
-# Development server with DI
-.PHONY: dev-di
-dev-di:
-	@echo "Starting development server with dependency injection..."
-	USE_DI=true $(GOCMD) run ./cmd/gateway
-
 # Run with production config
 .PHONY: run
 run: build
@@ -157,7 +151,6 @@ help:
 	@echo "  clean        - Clean build artifacts"
 	@echo "  deps         - Download dependencies"
 	@echo "  dev          - Start development server"
-	@echo "  dev-di       - Start dev server with dependency injection"
 	@echo "  run          - Build and run"
 	@echo "  docker       - Build Docker image"
 	@echo "  help         - Show this help"

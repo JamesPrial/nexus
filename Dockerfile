@@ -49,7 +49,6 @@ EXPOSE 8080
 
 # Set environment variables
 ENV CONFIG_PATH=/app/config.yaml
-ENV USE_DI=true
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

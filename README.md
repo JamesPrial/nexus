@@ -95,11 +95,8 @@ nexus -version
 # Show help
 nexus -help
 
-# Use dependency injection architecture (recommended)
-nexus -di
-
-# Use environment variables
-USE_DI=true CONFIG_PATH=/path/to/config.yaml nexus
+# Use custom configuration file
+CONFIG_PATH=/path/to/config.yaml nexus
 ```
 
 ### Configuration

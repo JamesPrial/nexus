@@ -1,0 +1,11 @@
+listen_port: 8080
+target_url: "https://api.openai.com"
+
+limits:
+  # Tier 1: A basic backstop for server health
+  requests_per_second: 100
+  burst: 200
+
+  # Tier 2: The core feature for cost control
+  # This limit is applied per-API-key.
+  model_tokens_per_minute: 50000

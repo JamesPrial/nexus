@@ -61,11 +61,6 @@ type Gateway interface {
 	Health() map[string]interface{}
 }
 
-// Middleware represents HTTP middleware
-type Middleware interface {
-	// Middleware returns the middleware handler function
-	Middleware(next http.Handler) http.Handler
-}
 
 // Logger provides structured logging
 type Logger interface {

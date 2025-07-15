@@ -33,7 +33,7 @@ func run() error {
 	if path := os.Getenv("CONFIG_PATH"); path != "" {
 		configPath = path
 	}
-	
+
 	configLoader := config.NewFileLoader(configPath)
 	cont.SetConfigLoader(configLoader)
 
@@ -50,7 +50,7 @@ func run() error {
 		return err
 	}
 
-	logger.Info("Nexus gateway started successfully", map[string]interface{}{
+	logger.Info("Nexus gateway started successfully", map[string]any{
 		"config_path": configPath,
 	})
 
@@ -59,7 +59,7 @@ func run() error {
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 	<-sigCh
 
-	logger.Info("Shutdown signal received", map[string]interface{}{})
+	logger.Info("Shutdown signal received", map[string]any{})
 
 	// Graceful shutdown
 	return gatewayService.Stop()
@@ -103,7 +103,7 @@ func main() {
 	}
 
 	log.Printf("Nexus API Gateway %s (built %s)", Version, BuildTime)
-	
+
 	if err := run(); err != nil {
 		log.Fatalf("failed to run gateway: %v", err)
 	}

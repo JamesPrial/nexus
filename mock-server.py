@@ -151,4 +151,5 @@ if __name__ == '__main__':
     print("3. Run tests: python demo.py")
     print("=" * 40)
     
-    app.run(host='0.0.0.0', port=9999, debug=True)
+    # Set debug=False to disable the reloader, which can interfere with testing.
+    app.run(host='0.0.0.0', port=9999, debug=False)

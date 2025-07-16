@@ -32,6 +32,12 @@ Thumbs.db
 # Logs
 *.log
 
+# Process ID files
+*.pid
+
+# Built binaries
+nexus
+
 # Runtime config (if different from default)
 config.local.yaml
 config.prod.yaml

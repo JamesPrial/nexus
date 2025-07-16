@@ -95,7 +95,7 @@ func (c *Container) Initialize() error {
 	c.tokenCounter = &proxy.DefaultTokenCounter{}
 
 	// Set up rate limiter
-	c.rateLimiter = proxy.NewRateLimiterWithLogger(
+	c.rateLimiter = proxy.NewPerClientRateLimiterWithLogger(
 		rate.Limit(cfg.Limits.RequestsPerSecond),
 		cfg.Limits.Burst,
 		c.logger,
@@ -135,10 +135,10 @@ func (c *Container) BuildHandler() http.Handler {
 		panic("container not initialized")
 	}
 
-	// Build middleware chain: tokenLimiter -> rateLimiter -> proxy
+	// Build middleware chain: rateLimiter -> tokenLimiter -> proxy
 	var handler http.Handler = http.HandlerFunc(c.proxy.ServeHTTP)
-	handler = c.rateLimiter.Middleware(handler)
 	handler = c.tokenLimiter.Middleware(handler)
+	handler = c.rateLimiter.Middleware(handler)
 
 	return handler
 }

@@ -1,14 +1,14 @@
 listen_port: 8080
-target_url: "https://api.openai.com"
+target_url: "http://localhost:9999"
 
 # Log level can be: debug, info, warn, error
 log_level: "info"
 
 limits:
   # Tier 1: A basic backstop for server health
-  requests_per_second: 100
-  burst: 200
+  requests_per_second: 2
+  burst: 3
 
   # Tier 2: The core feature for cost control
   # This limit is applied per-API-key.
-  model_tokens_per_minute: 50000
+  model_tokens_per_minute: 1000

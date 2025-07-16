@@ -36,20 +36,6 @@ class NexusDemo:
             "Content-Type": "application/json"
         })
 
-    def health_check(self) -> bool:
-        """Check if Nexus is running"""
-        try:
-            response = self.session.get(f"{self.base_url}/health", timeout=5)
-            if response.status_code == 200:
-                print("✅ Nexus is running and healthy")
-                return True
-            else:
-                print(f"❌ Nexus health check failed: {response.status_code}")
-                return False
-        except requests.exceptions.RequestException as e:
-            print(f"❌ Cannot connect to Nexus: {e}")
-            return False
-
     def make_chat_request(self, message: str, model: str = "gpt-3.5-turbo") -> Optional[Dict[Any, Any]]:
         """Make a chat completion request through Nexus"""
         payload = {
@@ -74,11 +60,18 @@ class NexusDemo:
                 print("✅ Request successful")
                 return response.json()
             elif response.status_code == 429:
-                print("🚫 Rate limited!")
+                print("🚫 Rate limited! (HTTP 429)")
                 print(f"Response: {response.text}")
                 return None
+            elif response.status_code == 502:
+                print("❌ Bad Gateway (HTTP 502): Nexus could not reach the target API.")
+                print("   Is the target service running?")
+                return None
+            elif response.status_code == 503:
+                print("❌ Service Unavailable (HTTP 503): The upstream service is likely down.")
+                return None
             else:
-                print(f"❌ Request failed: {response.status_code}")
+                print(f"❌ Request failed with status {response.status_code}")
                 print(f"Response: {response.text}")
                 return None
                 
@@ -91,20 +84,23 @@ class NexusDemo:
         print("\n" + "="*60)
         print("🚀 DEMO: Rate Limiting")
         print("="*60)
-        print("Making rapid requests to trigger rate limiting...")
-        print("(Note: This will fail gracefully since we're not hitting real OpenAI)")
+        print("Making rapid requests to demonstrate rate limiting.")
+        print("Nexus is configured with generous limits, so this may not trigger a 429.")
+        print("To guarantee a rate limit, lower `requests_per_second` in config.yaml.")
         
-        for i in range(5):
+        for i in range(15): # Increased from 5 to 15
             print(f"\n--- Request {i+1} ---")
             self.make_chat_request(f"Hello, this is test request {i+1}")
-            time.sleep(0.1)  # Small delay between requests
+            time.sleep(0.05)  # Shorter delay
 
     def demo_token_counting(self):
         """Demonstrate token-based rate limiting with different message sizes"""
         print("\n" + "="*60)
         print("🧮 DEMO: Token Counting")
         print("="*60)
-        print("Testing different message sizes to show token counting...")
+        print("Testing different message sizes to show token-based limiting.")
+        print("(Note: This demo uses character count as a rough proxy for tokens.")
+        print("A real implementation would use a library like 'tiktoken' for accuracy.)")
         
         test_messages = [
             "Hi",  # Small message
@@ -143,15 +139,13 @@ class NexusDemo:
         print("🎯 Nexus API Gateway Demo")
         print("="*60)
         
-        # First check if Nexus is running
-        if not self.health_check():
-            print("\n❌ Please start Nexus first:")
-            print("   ./nexus")
-            print("   # or")
-            print("   make run")
-            sys.exit(1)
-        
         # Run demonstrations
+        print("Attempting to connect to Nexus at", self.base_url)
+        print("If the script fails, please ensure Nexus is running.")
+        print("  ./nexus")
+        print("  # or")
+        print("  make run\n")
+        
         self.demo_rate_limiting()
         self.demo_token_counting()
         self.demo_multiple_api_keys()

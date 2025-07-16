@@ -87,7 +87,7 @@ func (h *HTTPProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			"host":   r.Host,
 		})
 	}
-	
+
 	h.ReverseProxy.ServeHTTP(w, r)
 }
 
@@ -97,75 +97,114 @@ func (h *HTTPProxy) SetTarget(targetURL string) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse target URL: %w", err)
 	}
-	
+
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	
+
 	h.target = target
 	h.ReverseProxy = httputil.NewSingleHostReverseProxy(target)
-	
+
 	if h.Logger != nil {
 		h.Logger.Info("Updated proxy target", map[string]any{
 			"target": targetURL,
 		})
 	}
-	
+
 	return nil
 }
 
-// NewRateLimiterWithLogger creates a rate limiter with logging support
-func NewRateLimiterWithLogger(r rate.Limit, b int, logger interfaces.Logger) interfaces.RateLimiter {
-	return &rateLimiterWithLogger{
-		RateLimiter: NewRateLimiter(r, b),
-		logger:      logger,
+func NewPerClientRateLimiterWithLogger(r rate.Limit, b int, logger interfaces.Logger) interfaces.RateLimiter {
+	return &perClientRateLimiterWithLogger{
+		limiter: NewPerClientRateLimiter(r, b),
+		logger:  logger,
 	}
 }
 
-// rateLimiterWithLogger wraps the existing RateLimiter with logging
-type rateLimiterWithLogger struct {
-	*RateLimiter
-	logger interfaces.Logger
+// perClientRateLimiterWithLogger wraps the PerClientRateLimiter with logging.
+type perClientRateLimiterWithLogger struct {
+	limiter *PerClientRateLimiter
+	logger  interfaces.Logger
 }
 
-// GetLimit returns rate limit information for an API key
-func (r *rateLimiterWithLogger) GetLimit(apiKey string) (allowed bool, remaining int) {
-	limiter := r.getClient(apiKey)
+// Middleware wraps the original middleware with logging.
+func (r *perClientRateLimiterWithLogger) Middleware(next http.Handler) http.Handler {
+	originalMiddleware := r.limiter.Middleware(next)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		apiKey := req.Header.Get("Authorization")
+		if r.logger != nil {
+			r.logger.Debug("Per-client rate limit check", map[string]any{
+				"path":           req.URL.Path,
+				"api_key_prefix": apiKey[:min(len(apiKey), 10)],
+			})
+		}
+		originalMiddleware.ServeHTTP(w, req)
+	})
+}
+
+// GetLimit returns remaining requests for the API key.
+func (r *perClientRateLimiterWithLogger) GetLimit(apiKey string) (allowed bool, remaining int) {
+	limiter := r.limiter.getClient(apiKey)
 	tokens := limiter.Tokens()
-	
 	return tokens > 0, int(tokens)
 }
 
-// Reset clears the rate limit state for an API key
-func (r *rateLimiterWithLogger) Reset(apiKey string) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	
-	delete(r.clients, apiKey)
-	
+// Reset clears the rate limit state for the API key.
+func (r *perClientRateLimiterWithLogger) Reset(apiKey string) {
+	r.limiter.mu.Lock()
+	delete(r.limiter.clients, apiKey)
+	r.limiter.mu.Unlock()
+
 	if r.logger != nil {
-		r.logger.Info("Reset rate limit for API key", map[string]any{
+		r.logger.Info("Reset per-client rate limit", map[string]any{
 			"api_key_prefix": apiKey[:min(len(apiKey), 10)],
 		})
 	}
 }
 
-// Middleware wraps the original middleware with logging
-func (r *rateLimiterWithLogger) Middleware(next http.Handler) http.Handler {
-	originalMiddleware := r.RateLimiter.Middleware(next)
-	
+// NewGlobalRateLimiterWithLogger creates a global rate limiter with logging support.
+func NewGlobalRateLimiterWithLogger(r rate.Limit, b int, logger interfaces.Logger) interfaces.RateLimiter {
+	return &globalRateLimiterWithLogger{
+		limiter: NewGlobalRateLimiter(r, b),
+		logger:  logger,
+	}
+}
+
+// globalRateLimiterWithLogger wraps the GlobalRateLimiter with logging.
+type globalRateLimiterWithLogger struct {
+	limiter *GlobalRateLimiter
+	logger  interfaces.Logger
+}
+
+// Middleware wraps the original middleware with logging.
+func (r *globalRateLimiterWithLogger) Middleware(next http.Handler) http.Handler {
+	originalMiddleware := r.limiter.Middleware(next)
+
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		apiKey := req.Header.Get("Authorization")
-		
 		if r.logger != nil {
-			r.logger.Debug("Rate limit check", map[string]any{
-				"api_key_prefix": apiKey[:min(len(apiKey), 10)],
-				"method":         req.Method,
-				"path":           req.URL.Path,
+			r.logger.Debug("Global rate limit check", map[string]any{
+				"path": req.URL.Path,
 			})
 		}
-		
 		originalMiddleware.ServeHTTP(w, req)
 	})
+}
+
+// GetLimit is not applicable to the global rate limiter.
+func (r *globalRateLimiterWithLogger) GetLimit(apiKey string) (allowed bool, remaining int) {
+	// This is a global limiter, so per-client state doesn't exist.
+	// We could return the state of the global limiter, but it's less meaningful.
+	return true, r.limiter.limiter.Burst()
+}
+
+// Reset is not applicable to the global rate limiter.
+func (r *globalRateLimiterWithLogger) Reset(apiKey string) {
+	// Cannot reset the global limiter on a per-key basis.
+	if r.logger != nil {
+		r.logger.Warn("Attempted to reset global rate limiter for a single key", map[string]any{
+			"api_key_prefix": apiKey[:min(len(apiKey), 10)],
+		})
+	}
 }
 
 // NewTokenLimiterWithDeps creates a token limiter with dependency injection
@@ -224,8 +263,8 @@ func (t *tokenLimiterWithDeps) Middleware(next http.Handler) http.Handler {
 		if !limiter.AllowN(time.Now(), tokenCount) {
 			if t.logger != nil {
 				t.logger.Warn("Token limit exceeded", map[string]any{
-					"api_key_prefix": apiKey[:min(len(apiKey), 10)],
-					"tokens_needed":  tokenCount,
+					"api_key_prefix":   apiKey[:min(len(apiKey), 10)],
+					"tokens_needed":    tokenCount,
 					"tokens_available": limiter.Tokens(),
 				})
 			}
@@ -235,8 +274,8 @@ func (t *tokenLimiterWithDeps) Middleware(next http.Handler) http.Handler {
 
 		if t.logger != nil {
 			t.logger.Debug("Token limit check passed", map[string]any{
-				"api_key_prefix": apiKey[:min(len(apiKey), 10)],
-				"tokens_used":    tokenCount,
+				"api_key_prefix":   apiKey[:min(len(apiKey), 10)],
+				"tokens_used":      tokenCount,
 				"tokens_remaining": limiter.Tokens(),
 			})
 		}
@@ -249,12 +288,12 @@ func (t *tokenLimiterWithDeps) Middleware(next http.Handler) http.Handler {
 func (t *tokenLimiterWithDeps) GetLimit(apiKey string) (allowed bool, remaining int) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	
+
 	limiter, exists := t.clients[apiKey]
 	if !exists {
 		return true, t.burst
 	}
-	
+
 	tokens := limiter.Tokens()
 	return tokens > 0, int(tokens)
 }
@@ -263,9 +302,9 @@ func (t *tokenLimiterWithDeps) GetLimit(apiKey string) (allowed bool, remaining 
 func (t *tokenLimiterWithDeps) Reset(apiKey string) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	
+
 	delete(t.clients, apiKey)
-	
+
 	if t.logger != nil {
 		t.logger.Info("Reset token limit for API key", map[string]any{
 			"api_key_prefix": apiKey[:min(len(apiKey), 10)],

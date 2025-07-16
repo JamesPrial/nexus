@@ -93,7 +93,64 @@ func TestGatewayIntegration(t *testing.T) {
 		t.Errorf("Expected status OK after waiting, got %d", resp.StatusCode)
 	}
 
-	// --- Test 4: Test token limiter ---
+	// Wait for the global rate limiter to replenish before testing the next client
+	time.Sleep(1 * time.Second)
+
+	// --- Test 4: Test per-client RPS limiting ---
+	// Wait for global limiter to replenish if needed
+	time.Sleep(1 * time.Second)
+
+	// Create requests with different API keys
+	reqKey1, err := http.NewRequest("GET", "http://localhost:8081", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	reqKey1.Header.Set("Authorization", "key1")
+
+	reqKey2, err := http.NewRequest("GET", "http://localhost:8081", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %v", err)
+	}
+	reqKey2.Header.Set("Authorization", "key2")
+
+	// Key1: First request allowed
+	resp, err = client.Do(reqKey1)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Key1 first: Expected OK, got %d", resp.StatusCode)
+	}
+
+	// Key1: Second immediate request should be denied (RPS=1, burst=1)
+	resp, err = client.Do(reqKey1)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusTooManyRequests {
+		t.Errorf("Key1 second: Expected 429, got %d", resp.StatusCode)
+	}
+
+	// Key2: Should have independent limit, first request allowed despite Key1's denial
+	resp, err = client.Do(reqKey2)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Key2 first: Expected OK, got %d", resp.StatusCode)
+	}
+
+	// Key2: Second immediate request denied
+	resp, err = client.Do(reqKey2)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusTooManyRequests {
+		t.Errorf("Key2 second: Expected 429, got %d", resp.StatusCode)
+	}
+
+	// --- Test 5: Test token limiter ---
+	// (Existing token limiter test can remain, or expand if needed)
 	// Create a new client for a new API key
 	client2 := &http.Client{}
 	req, err = http.NewRequest("GET", "http://localhost:8081", nil)

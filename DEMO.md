@@ -2,34 +2,48 @@
 
 This directory contains scripts to demonstrate and test Nexus functionality.
 
-## Quick Demo
+## Prerequisites
 
-### Option 1: Full Demo with Mock Server (Recommended)
+Before running the demo, ensure you have:
+- Go 1.23+ installed
+- Python 3.x with pip
+- Git (to clone/manage the repository)
 
-1. **Install Python dependencies:**
+## Quick Start
+
+1. **Build Nexus:**
+   ```bash
+   go build -o nexus ./cmd/gateway
+   ```
+
+2. **Install Python dependencies:**
    ```bash
    pip install flask requests
    ```
 
-2. **Start the mock API server:**
+## Quick Demo
+
+### Option 1: Full Demo with Mock Server (Recommended)
+
+1. **Start the mock API server:**
    ```bash
    python mock-server.py
    ```
    This creates a fake OpenAI API at `http://localhost:9999`
 
-3. **Update Nexus config** (in another terminal):
+2. **Verify Nexus config** (config should already be set for demo):
    ```bash
-   # Edit config.yaml to point to mock server
-   sed -i 's|https://api.openai.com|http://localhost:9999|' config.yaml
+   # Verify config.yaml points to mock server
+   grep "target_url" config.yaml
+   # Should show: target_url: "http://localhost:9999"
    ```
 
-4. **Start Nexus:**
+3. **Start Nexus** (in another terminal):
    ```bash
    ./nexus
-   # or: make run
    ```
 
-5. **Run the demo:**
+4. **Run the demo:**
    ```bash
    python demo.py
    ```
@@ -43,9 +57,10 @@ This directory contains scripts to demonstrate and test Nexus functionality.
 
 2. **Run basic tests:**
    ```bash
+   chmod +x test-nexus.sh
    ./test-nexus.sh
    ```
-   Note: Requests will fail at the OpenAI API level, but rate limiting will still work!
+   Note: Without mock server, requests will fail with authentication errors, but rate limiting still works!
 
 ## What the Demo Shows
 
@@ -68,11 +83,10 @@ This directory contains scripts to demonstrate and test Nexus functionality.
 
 ### `demo.py`
 Comprehensive Python demo showing:
-- Health checks
-- Rate limiting
-- Token counting
-- Multiple API keys
-- Error handling
+- Rate limiting with HTTP 429 responses
+- Token counting with different message sizes
+- Multiple API keys with separate rate limits
+- Error handling for various failure scenarios
 
 ```bash
 python demo.py
@@ -108,14 +122,19 @@ Status: 200
 
 ### Rate Limited Request
 ```
-🚫 Rate limited!
+🚫 Rate limited! (HTTP 429)
 Status: 429
-Response: {"error": "Token limit exceeded"}
+Response: Too many requests for this client
 ```
 
-### Health Check
+### Health Check (with API key)
 ```
-✅ Nexus is running and healthy
+Authorization header is required for rate limiting
+```
+
+### Mock Server Health Check
+```
+{"status":"healthy","server":"mock-openai-api"}
 ```
 
 ## Configuration for Testing
@@ -143,8 +162,10 @@ limits:
 ## Troubleshooting
 
 ### "Connection refused" 
+- Ensure Nexus binary is built: `go build -o nexus ./cmd/gateway`
 - Ensure Nexus is running: `./nexus`
 - Check health endpoint: `curl http://localhost:8080/health`
+- Ensure mock server is running: `curl http://localhost:9999/health`
 
 ### "Rate limited immediately"
 - Lower the rate limits in `config.yaml`
@@ -152,9 +173,10 @@ limits:
 - Use different API keys
 
 ### Mock server not responding
-- Ensure Python and Flask are installed
-- Check mock server is running on port 9999
-- Verify `target_url` in config.yaml
+- Ensure Python and Flask are installed: `pip install flask requests`
+- Check mock server is running on port 9999: `curl http://localhost:9999/health`
+- Verify `target_url` in config.yaml points to `http://localhost:9999`
+- Kill any existing processes: `pkill -f mock-server.py`
 
 ## Real-World Testing
 

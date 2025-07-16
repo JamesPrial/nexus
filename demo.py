@@ -98,9 +98,8 @@ class NexusDemo:
         print("\n" + "="*60)
         print("🧮 DEMO: Token Counting")
         print("="*60)
-        print("Testing different message sizes to show token-based limiting.")
-        print("(Note: This demo uses character count as a rough proxy for tokens.")
-        print("A real implementation would use a library like 'tiktoken' for accuracy.)")
+        print("Testing different message sizes to show accurate token-based limiting.")
+        print("(Note: Nexus now uses tiktoken for precise token counting with model-specific BPE encoders.)")
         
         test_messages = [
             "Hi",  # Small message

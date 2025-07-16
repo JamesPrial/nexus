@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/tiktoken-go/tokenizer"
 	"golang.org/x/time/rate"
 )
 
@@ -35,7 +37,28 @@ func NewTokenLimiter(tpm, burst int) *TokenLimiter {
 	}
 }
 
-// countTokens calculates the approximate token count for a request
+// getEncodingForModel returns the appropriate tiktoken encoding for a model
+func getEncodingForModel(model string) tokenizer.Encoding {
+	// Map models to their appropriate encodings
+	// Reference: https://github.com/openai/tiktoken/blob/main/tiktoken/model.py
+	switch {
+	case strings.HasPrefix(model, "gpt-4o"):
+		return tokenizer.O200kBase // GPT-4o models use o200k_base
+	case strings.HasPrefix(model, "gpt-4"), strings.HasPrefix(model, "gpt-3.5-turbo"):
+		return tokenizer.Cl100kBase // GPT-4 and GPT-3.5-turbo use cl100k_base
+	case strings.HasPrefix(model, "text-davinci-003"), strings.HasPrefix(model, "text-davinci-002"):
+		return tokenizer.P50kBase // Davinci models use p50k_base
+	case strings.HasPrefix(model, "code-davinci-002"), strings.HasPrefix(model, "code-cushman-001"):
+		return tokenizer.P50kBase // Code models use p50k_base
+	case strings.HasPrefix(model, "text-davinci-001"), strings.HasPrefix(model, "text-curie-001"), strings.HasPrefix(model, "text-babbage-001"), strings.HasPrefix(model, "text-ada-001"):
+		return tokenizer.R50kBase // Older models use r50k_base
+	default:
+		// Default to cl100k_base for unknown models (most common)
+		return tokenizer.Cl100kBase
+	}
+}
+
+// countTokens calculates the accurate token count for a request using tiktoken
 func countTokens(r *http.Request) (int, error) {
 	// Read request body without consuming it
 	body, err := io.ReadAll(r.Body)
@@ -56,36 +79,72 @@ func countTokens(r *http.Request) (int, error) {
 			Role    string `json:"role"`
 			Content string `json:"content"`
 		} `json:"messages"`
-		Prompt string `json:"prompt"`
+		Prompt      string `json:"prompt"`
+		MaxTokens   int    `json:"max_tokens"`
+		Temperature *float64 `json:"temperature"`
 	}
 
-	// If JSON parsing fails, count the raw body size
+	// If JSON parsing fails, fall back to character-based estimation
 	if err := json.Unmarshal(body, &payload); err != nil {
-		// For non-JSON requests, estimate based on body size
-		tokenCount := len(body) / 4
-		if tokenCount < 1 {
-			tokenCount = 1
-		}
+		// For non-JSON requests, estimate based on body size (4 chars ≈ 1 token)
+		tokenCount := max(1, len(body)/4)
 		return tokenCount, nil
 	}
 
-	// Calculate token count: 4 characters ≈ 1 token
-	tokenCount := 0
-
-	// Count tokens from messages if present
-	for _, msg := range payload.Messages {
-		tokenCount += len(msg.Content) / 4
+	// Get the appropriate encoding for this model
+	encoding := getEncodingForModel(payload.Model)
+	enc, err := tokenizer.Get(encoding)
+	if err != nil {
+		// Fallback to character-based estimation if tokenizer fails
+		totalChars := 0
+		for _, msg := range payload.Messages {
+			totalChars += len(msg.Content)
+		}
+		totalChars += len(payload.Prompt)
+		tokenCount := max(5, totalChars/4)
+		return tokenCount, nil
 	}
 
-	// Also count tokens from prompt if present
-	tokenCount += len(payload.Prompt) / 4
+	totalTokens := 0
 
-	// Add minimum token count for system messages/metadata
-	if tokenCount < 5 {
-		tokenCount = 5
+	// Count tokens from messages (chat completion format)
+	if len(payload.Messages) > 0 {
+		// Add overhead tokens for chat format
+		// Every message follows <|start|>{role/name}\n{content}<|end|>\n
+		totalTokens += 3 // Every reply is primed with <|start|>assistant<|message|>
+
+		for _, message := range payload.Messages {
+			totalTokens += 3 // Every message has overhead tokens
+			
+			// Count tokens in role
+			roleTokens, _, _ := enc.Encode(message.Role)
+			totalTokens += len(roleTokens)
+			
+			// Count tokens in content
+			contentTokens, _, _ := enc.Encode(message.Content)
+			totalTokens += len(contentTokens)
+		}
 	}
 
-	return tokenCount, nil
+	// Count tokens from prompt (completion format)
+	if payload.Prompt != "" {
+		promptTokens, _, _ := enc.Encode(payload.Prompt)
+		totalTokens += len(promptTokens)
+	}
+
+	// Add estimated tokens for response if max_tokens is specified
+	if payload.MaxTokens > 0 {
+		// This is an estimate of what the response might consume
+		// For rate limiting purposes, we might want to include this
+		// But for now, we'll only count input tokens
+	}
+
+	// Ensure minimum token count
+	if totalTokens < 1 {
+		totalTokens = 1
+	}
+
+	return totalTokens, nil
 }
 
 // Middleware is the HTTP middleware for the token limiter.

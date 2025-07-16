@@ -70,9 +70,10 @@ Before running the demo, ensure you have:
 - Demonstrates per-API-key rate limiting
 
 ### Token Counting
-- Tests different message sizes
-- Shows how Nexus estimates token usage
-- Demonstrates cost-based rate limiting
+- Tests different message sizes with accurate tiktoken-based counting
+- Shows precise token usage calculation using OpenAI's BPE encoders
+- Demonstrates model-specific token counting (GPT-4, GPT-3.5, etc.)
+- Provides cost-based rate limiting with real token consumption
 
 ### Multi-User Scenarios
 - Tests multiple API keys

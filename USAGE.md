@@ -2,11 +2,14 @@
 
 ## How Nexus Works
 
-Nexus acts as a reverse proxy between your applications and AI APIs. Instead of calling OpenAI directly, your apps call Nexus, which then forwards requests to the upstream API while applying rate limiting and cost controls.
+Nexus acts as a secure reverse proxy between your applications and AI APIs. Instead of calling OpenAI directly, your apps call Nexus using nexus-specific API keys. Nexus then forwards requests to the upstream API using your real API keys while applying rate limiting and cost controls.
 
 ```
 Your App → Nexus (localhost:8080) → OpenAI API (api.openai.com)
+[nexus-client-key] → [transforms to] → [sk-real-openai-key]
 ```
+
+This approach eliminates the risk of accidentally exposing your valuable upstream API keys in client applications, logs, or configuration files.
 
 ## Python Applications
 
@@ -18,9 +21,9 @@ import openai
 # Instead of hitting OpenAI directly
 # openai.api_base = "https://api.openai.com/v1"
 
-# Point your app to Nexus
+# Point your app to Nexus with secure client key
 openai.api_base = "http://localhost:8080/v1"
-openai.api_key = "sk-your-openai-key"
+openai.api_key = "nexus-client-demo"  # Nexus-specific key, not your real OpenAI key
 
 # Your existing code works unchanged
 response = openai.ChatCompletion.create(
@@ -29,13 +32,21 @@ response = openai.ChatCompletion.create(
 )
 ```
 
+**Configuration (config.yaml):**
+```yaml
+# Secure API key mapping
+api_keys:
+  "nexus-client-demo": "sk-your-real-openai-key"
+  "nexus-client-prod": "sk-your-production-openai-key"
+```
+
 ## Node.js Applications
 
 ```javascript
 const { Configuration, OpenAIApi } = require("openai");
 
 const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: "nexus-client-demo",  // Nexus-specific key
   basePath: "http://localhost:8080/v1",  // Point to Nexus
 });
 
@@ -58,9 +69,11 @@ For easy configuration across different environments:
 ```bash
 # Development
 export OPENAI_API_BASE="http://localhost:8080/v1"
+export OPENAI_API_KEY="nexus-client-demo"
 
-# Production
+# Production  
 export OPENAI_API_BASE="http://nexus.company.com:8080/v1"
+export OPENAI_API_KEY="nexus-client-prod"
 ```
 
 ## Docker Deployment
@@ -82,24 +95,39 @@ services:
     image: your-app:latest
     environment:
       - OPENAI_API_BASE=http://nexus:8080/v1
-      - OPENAI_API_KEY=sk-your-key
+      - OPENAI_API_KEY=nexus-client-prod  # Nexus-specific key
     depends_on:
       - nexus
 ```
 
 ## Multi-Team Usage
 
-Each team can use their own API keys with separate rate limits:
+Each team can use their own nexus client keys with separate rate limits:
 
 ```python
 # Team A
-openai.api_key = "sk-team-a-key"
+openai.api_key = "nexus-team-a"
 openai.api_base = "http://nexus.company.com:8080/v1"
 
 # Team B  
-openai.api_key = "sk-team-b-key"
+openai.api_key = "nexus-team-b"
 openai.api_base = "http://nexus.company.com:8080/v1"
 ```
+
+**Configuration for multi-team setup:**
+```yaml
+# config.yaml
+api_keys:
+  "nexus-team-a": "sk-team-a-openai-key"
+  "nexus-team-b": "sk-team-b-openai-key"
+  "nexus-shared-dev": "sk-shared-development-key"
+```
+
+This provides several security benefits:
+- Teams never see each other's real OpenAI API keys
+- Real API keys are stored only on the Nexus server
+- Easy key rotation without updating client applications
+- Audit trail of which team used which resources
 
 ## Rate Limiting Configuration
 
@@ -157,7 +185,7 @@ You can pass custom headers through Nexus to the upstream API:
 import openai
 
 openai.api_base = "http://localhost:8080/v1"
-openai.api_key = "sk-your-key"
+openai.api_key = "nexus-client-demo"  # Nexus-specific key
 
 # Custom headers are passed through
 response = openai.ChatCompletion.create(

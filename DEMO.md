@@ -75,10 +75,11 @@ Before running the demo, ensure you have:
 - Demonstrates model-specific token counting (GPT-4, GPT-3.5, etc.)
 - Provides cost-based rate limiting with real token consumption
 
-### Multi-User Scenarios
-- Tests multiple API keys
-- Shows separate rate limits per key
-- Simulates real-world usage patterns
+### Multi-User Scenarios with Secure API Keys
+- Tests multiple nexus client keys (nexus-client-user1, nexus-client-user2)
+- Shows separate rate limits per client key
+- Demonstrates secure key transformation (client keys → upstream keys)
+- Simulates real-world usage patterns with enhanced security
 
 ## Demo Scripts
 
@@ -86,7 +87,8 @@ Before running the demo, ensure you have:
 Comprehensive Python demo showing:
 - Rate limiting with HTTP 429 responses
 - Token counting with different message sizes
-- Multiple API keys with separate rate limits
+- Multiple nexus client keys with separate rate limits
+- Secure API key transformation and authentication
 - Error handling for various failure scenarios
 
 ```bash
@@ -154,6 +156,13 @@ limits:
 ```yaml
 listen_port: 8080
 target_url: "http://localhost:9999"  # Mock server
+
+# Secure API key mapping for demo
+api_keys:
+  "nexus-client-demo": "sk-upstream-demo-key"
+  "nexus-client-user1": "sk-upstream-demo-key"
+  "nexus-client-user2": "sk-upstream-demo-key"
+
 limits:
   requests_per_second: 2            # Lower for demo
   burst: 3
@@ -183,20 +192,25 @@ limits:
 
 To test with a real API:
 
-1. **Set up valid API key:**
-   ```bash
-   export DEMO_API_KEY="sk-your-real-openai-key"
-   ```
-
-2. **Use OpenAI target:**
+1. **Configure secure API keys in config.yaml:**
    ```yaml
    target_url: "https://api.openai.com"
+   
+   api_keys:
+     "nexus-client-demo": "sk-your-real-openai-key"
+     "nexus-client-prod": "sk-your-production-openai-key"
    ```
 
-3. **Run demo:**
+2. **Run demo (no environment variables needed):**
    ```bash
    python demo.py
    ```
+
+3. **Benefits of this approach:**
+   - Your real OpenAI API keys never leave the server
+   - Client applications only know nexus-specific keys
+   - Easy key rotation without updating clients
+   - Enhanced security and audit trail
 
 **Warning:** This will make real API calls and consume tokens/credits!
 

@@ -5,8 +5,9 @@ Nexus is a high-performance, self-hosted API gateway for AI models. It provides 
 ## Features
 
 - **Unified API:** A single API for all your AI models, regardless of the provider.
+- **Secure API Key Management:** Centralized key storage eliminates accidental exposure of upstream API keys by using nexus-specific client keys.
 - **Rate Limiting:** Protect your upstream services with a configurable, per-API-key rate limiter.
-- **Cost-Based Limiting:** (Coming Soon) Protect your wallet with a rate limiter that understands language model tokens.
+- **Token-Based Limiting:** Protect your wallet with intelligent rate limiting based on actual language model token consumption.
 - **Self-Hosted:** Keep your data private and your latency low by deploying Nexus within your own infrastructure.
 - **Open-Source:** Nexus is open-source and licensed under the MIT license.
 
@@ -105,6 +106,7 @@ Nexus is configured using a `config.yaml` file in the root of the project. The f
 
 -   `listen_port`: The port the gateway will listen on.
 -   `target_url`: The URL of the upstream API to proxy requests to.
+-   `api_keys`: (Optional) Map of client API keys to upstream API keys for enhanced security.
 -   `limits`:
     -   `requests_per_second`: The number of requests per second to allow for each API key.
     -   `burst`: The number of requests that can be sent in a burst for each API key.
@@ -120,13 +122,21 @@ import openai
 
 # Point your app to Nexus instead of OpenAI directly
 openai.api_base = "http://localhost:8080/v1"
-openai.api_key = "sk-your-openai-key"
+openai.api_key = "nexus-client-demo"  # Use nexus-specific key for security
 
 # Your existing code works unchanged
 response = openai.ChatCompletion.create(
     model="gpt-4",
     messages=[{"role": "user", "content": "Hello!"}]
 )
+```
+
+**Configuration for secure API key management:**
+```yaml
+# config.yaml
+api_keys:
+  "nexus-client-demo": "sk-your-real-openai-key"
+  "nexus-client-prod": "sk-your-production-key"
 ```
 
 ## Contributing

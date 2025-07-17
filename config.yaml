@@ -4,6 +4,15 @@ target_url: "http://localhost:9999"
 # Log level can be: debug, info, warn, error
 log_level: "info"
 
+# API key configuration (optional)
+# If not configured, nexus will pass through client API keys directly
+api_keys:
+  # Map of client API keys to upstream API keys
+  # Format: "client_key": "upstream_key"
+  "nexus-client-demo": "sk-upstream-demo-key"
+  "nexus-client-user1": "sk-upstream-demo-key" 
+  "nexus-client-user2": "sk-upstream-demo-key"
+
 limits:
   # Tier 1: A basic backstop for server health
   requests_per_second: 2

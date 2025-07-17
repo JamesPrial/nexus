@@ -14,6 +14,7 @@ type Config struct {
 	ListenPort int
 	TargetURL  string
 	LogLevel   string `yaml:"log_level"`
+	APIKeys    map[string]string
 	Limits     Limits
 }
 
@@ -68,6 +69,18 @@ type Logger interface {
 	Info(msg string, fields map[string]any)
 	Warn(msg string, fields map[string]any)
 	Error(msg string, fields map[string]any)
+}
+
+// KeyManager manages API key mapping and validation
+type KeyManager interface {
+	// ValidateClientKey checks if a client API key is valid
+	ValidateClientKey(clientKey string) bool
+	
+	// GetUpstreamKey returns the upstream API key for a client key
+	GetUpstreamKey(clientKey string) (string, error)
+	
+	// IsConfigured returns true if API key management is configured
+	IsConfigured() bool
 }
 
 // Container holds application dependencies and provides dependency injection

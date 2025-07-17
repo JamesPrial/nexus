@@ -6,6 +6,8 @@ import (
 	"net/http/httputil"
 	"net/url"
 
+	"github.com/jamesprial/nexus/config"
+	"github.com/jamesprial/nexus/internal/auth"
 	"github.com/jamesprial/nexus/internal/interfaces"
 	"github.com/jamesprial/nexus/internal/logging"
 	"github.com/jamesprial/nexus/internal/proxy"
@@ -14,13 +16,15 @@ import (
 
 // Container holds all application dependencies
 type Container struct {
-	configLoader interfaces.ConfigLoader
-	rateLimiter  interfaces.RateLimiter
-	tokenLimiter interfaces.RateLimiter
-	tokenCounter interfaces.TokenCounter
-	proxy        interfaces.Proxy
-	logger       interfaces.Logger
-	config       *interfaces.Config
+	configLoader   interfaces.ConfigLoader
+	rateLimiter    interfaces.RateLimiter
+	tokenLimiter   interfaces.RateLimiter
+	tokenCounter   interfaces.TokenCounter
+	proxy          interfaces.Proxy
+	logger         interfaces.Logger
+	config         *interfaces.Config
+	keyManager     interfaces.KeyManager
+	authMiddleware *auth.AuthMiddleware
 }
 
 // New creates a new dependency injection container
@@ -91,6 +95,14 @@ func (c *Container) Initialize() error {
 		c.logger = logging.NewSlogLogger(cfg.LogLevel)
 	}
 
+	// Set up key manager and auth middleware
+	// Convert from interfaces.Config to config.Config to maintain compatibility
+	configForAuth := &config.Config{
+		APIKeys: cfg.APIKeys,
+	}
+	c.keyManager = auth.NewFileKeyManager(configForAuth)
+	c.authMiddleware = auth.NewAuthMiddleware(c.keyManager, c.logger)
+
 	// Set up token counter
 	c.tokenCounter = &proxy.DefaultTokenCounter{}
 
@@ -102,10 +114,7 @@ func (c *Container) Initialize() error {
 	)
 
 	// Set up token limiter with proper burst calculation
-	tokenBurst := cfg.Limits.ModelTokensPerMinute / 6
-	if tokenBurst < 100 {
-		tokenBurst = 100
-	}
+	tokenBurst := max(cfg.Limits.ModelTokensPerMinute/6, 100)
 
 	c.tokenLimiter = proxy.NewTokenLimiterWithDeps(
 		cfg.Limits.ModelTokensPerMinute,
@@ -135,10 +144,11 @@ func (c *Container) BuildHandler() http.Handler {
 		panic("container not initialized")
 	}
 
-	// Build middleware chain: rateLimiter -> tokenLimiter -> proxy
+	// Build middleware chain: auth -> rateLimiter -> tokenLimiter -> proxy
 	var handler http.Handler = http.HandlerFunc(c.proxy.ServeHTTP)
 	handler = c.tokenLimiter.Middleware(handler)
 	handler = c.rateLimiter.Middleware(handler)
+	handler = c.authMiddleware.Middleware(handler)
 
 	return handler
 }

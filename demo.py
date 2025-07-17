@@ -24,7 +24,7 @@ from typing import Dict, Any, Optional
 
 # Configuration
 NEXUS_BASE_URL = "http://localhost:8080"
-DEMO_API_KEY = os.getenv("DEMO_API_KEY", "sk-demo-key-12345")
+DEMO_API_KEY = os.getenv("DEMO_API_KEY", "nexus-client-demo")
 
 class NexusDemo:
     def __init__(self, base_url: str = NEXUS_BASE_URL, api_key: str = DEMO_API_KEY):
@@ -120,8 +120,8 @@ class NexusDemo:
         print("Testing with different API keys to show separate rate limits...")
         
         # Create demo instances with different API keys
-        demo_user_a = NexusDemo(api_key="sk-user-a-key")
-        demo_user_b = NexusDemo(api_key="sk-user-b-key")
+        demo_user_a = NexusDemo(api_key="nexus-client-user1")
+        demo_user_b = NexusDemo(api_key="nexus-client-user2")
         
         print("\n--- User A requests ---")
         for i in range(3):
@@ -153,12 +153,15 @@ class NexusDemo:
         print("✅ Demo completed!")
         print("="*60)
         print("\nKey takeaways:")
-        print("• Nexus acts as a rate-limiting proxy")
-        print("• Different API keys have separate rate limits")
+        print("• Nexus acts as a rate-limiting proxy with API key management")
+        print("• Clients use nexus-specific API keys, not upstream API keys")
+        print("• Different client keys have separate rate limits")
         print("• Token counting helps control costs")
         print("• Rate limits return HTTP 429 when exceeded")
-        print("\nFor real usage, set target_url to a working API endpoint")
-        print("and use valid API keys.")
+        print("\nFor real usage:")
+        print("• Configure api_keys mapping in config.yaml")
+        print("• Set target_url to a working API endpoint")
+        print("• Use your real upstream API keys in the configuration")
 
 def main():
     """Main demo function"""

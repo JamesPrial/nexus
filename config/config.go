@@ -7,9 +7,11 @@ import (
 )
 
 type Config struct {
-	ListenPort int    `yaml:"listen_port"`
-	TargetURL  string `yaml:"target_url"`
-	Limits     Limits `yaml:"limits"`
+	ListenPort int               `yaml:"listen_port"`
+	TargetURL  string            `yaml:"target_url"`
+	LogLevel   string            `yaml:"log_level"`
+	APIKeys    map[string]string `yaml:"api_keys"`
+	Limits     Limits            `yaml:"limits"`
 }
 
 type Limits struct {

@@ -133,11 +133,9 @@ func countTokens(r *http.Request) (int, error) {
 	}
 
 	// Add estimated tokens for response if max_tokens is specified
-	if payload.MaxTokens > 0 {
-		// This is an estimate of what the response might consume
-		// For rate limiting purposes, we might want to include this
-		// But for now, we'll only count input tokens
-	}
+	// This is an estimate of what the response might consume
+	// For rate limiting purposes, we might want to include this
+	// But for now, we'll only count input tokens
 
 	// Ensure minimum token count
 	if totalTokens < 1 {

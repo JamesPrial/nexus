@@ -362,6 +362,6 @@ func BenchmarkFileKeyManager_GetUpstreamKey(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		manager.GetUpstreamKey("client1")
+		_, _ = manager.GetUpstreamKey("client1")
 	}
 }

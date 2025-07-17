@@ -202,7 +202,7 @@ func TestTokenLimiterIntegration(t *testing.T) {
 	// Create a test handler
 	handler := limiter.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Success"))
+		_, _ = w.Write([]byte("Success"))
 	}))
 
 	// Test the request

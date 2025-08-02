@@ -2,6 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🛑 STOP! CRITICAL WORKFLOW REQUIREMENT 🛑
+
+**BEFORE ANY DEVELOPMENT WORK:**
+1. **READ AND FOLLOW**: `PREFLIGHT-CHECKLIST.md`
+2. **VERIFY**: You are NOT on main/master branch (`git branch --show-current`)
+3. **CREATE**: Feature branch with `git checkout -b feat/[name]` if needed
+
+**FAILURE TO FOLLOW THIS WORKFLOW WILL RESULT IN:**
+- Git hooks blocking your commits
+- Wasted work that must be redone
+- Violation of team development standards
+
+⚠️ **The pre-commit hook will PREVENT commits to main/master** ⚠️
+
 ## 🚀 Agent-First Development
 
 **IMPORTANT**: All code development MUST use the specialized agent system. Agents enforce TDD and maintain code quality standards.

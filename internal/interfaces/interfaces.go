@@ -16,6 +16,14 @@ type Config struct {
 	LogLevel   string `yaml:"log_level"`
 	APIKeys    map[string]string
 	Limits     Limits
+	TLS        *TLSConfig
+}
+
+// TLSConfig represents TLS configuration
+type TLSConfig struct {
+	Enabled  bool
+	CertFile string
+	KeyFile  string
 }
 
 type Limits struct {

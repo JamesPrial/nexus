@@ -1,10 +1,8 @@
 package config
 
 import (
-	"os"
-
+	"github.com/jamesprial/nexus/config"
 	"github.com/jamesprial/nexus/internal/interfaces"
-	"gopkg.in/yaml.v3"
 )
 
 // FileLoader loads configuration from a YAML file
@@ -21,36 +19,35 @@ func NewFileLoader(filePath string) *FileLoader {
 
 // Load implements interfaces.ConfigLoader
 func (f *FileLoader) Load() (*interfaces.Config, error) {
-	data, err := os.ReadFile(f.filePath)
+	// Use the existing config.Load function
+	cfg, err := config.Load(f.filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	// Use the existing config struct for YAML unmarshaling
-	var yamlConfig struct {
-		ListenPort int    `yaml:"listen_port"`
-		TargetURL  string `yaml:"target_url"`
-		Limits     struct {
-			RequestsPerSecond    int `yaml:"requests_per_second"`
-			Burst                int `yaml:"burst"`
-			ModelTokensPerMinute int `yaml:"model_tokens_per_minute"`
-		} `yaml:"limits"`
-	}
-
-	if err := yaml.Unmarshal(data, &yamlConfig); err != nil {
-		return nil, err
-	}
-
 	// Convert to interface config
-	return &interfaces.Config{
-		ListenPort: yamlConfig.ListenPort,
-		TargetURL:  yamlConfig.TargetURL,
+	result := &interfaces.Config{
+		ListenPort: cfg.ListenPort,
+		TargetURL:  cfg.TargetURL,
+		LogLevel:   cfg.LogLevel,
+		APIKeys:    cfg.APIKeys,
 		Limits: interfaces.Limits{
-			RequestsPerSecond:    yamlConfig.Limits.RequestsPerSecond,
-			Burst:                yamlConfig.Limits.Burst,
-			ModelTokensPerMinute: yamlConfig.Limits.ModelTokensPerMinute,
+			RequestsPerSecond:    cfg.Limits.RequestsPerSecond,
+			Burst:                cfg.Limits.Burst,
+			ModelTokensPerMinute: cfg.Limits.ModelTokensPerMinute,
 		},
-	}, nil
+	}
+	
+	// Convert TLS config if present
+	if cfg.TLS != nil {
+		result.TLS = &interfaces.TLSConfig{
+			Enabled:  cfg.TLS.Enabled,
+			CertFile: cfg.TLS.CertFile,
+			KeyFile:  cfg.TLS.KeyFile,
+		}
+	}
+	
+	return result, nil
 }
 
 // MemoryLoader loads configuration from memory (useful for testing)
@@ -68,13 +65,33 @@ func NewMemoryLoader(config *interfaces.Config) *MemoryLoader {
 // Load implements interfaces.ConfigLoader
 func (m *MemoryLoader) Load() (*interfaces.Config, error) {
 	// Return a copy to prevent modification
-	return &interfaces.Config{
+	result := &interfaces.Config{
 		ListenPort: m.config.ListenPort,
 		TargetURL:  m.config.TargetURL,
+		LogLevel:   m.config.LogLevel,
 		Limits: interfaces.Limits{
 			RequestsPerSecond:    m.config.Limits.RequestsPerSecond,
 			Burst:                m.config.Limits.Burst,
 			ModelTokensPerMinute: m.config.Limits.ModelTokensPerMinute,
 		},
-	}, nil
+	}
+	
+	// Deep copy API keys map
+	if m.config.APIKeys != nil {
+		result.APIKeys = make(map[string]string, len(m.config.APIKeys))
+		for k, v := range m.config.APIKeys {
+			result.APIKeys[k] = v
+		}
+	}
+	
+	// Copy TLS config if present
+	if m.config.TLS != nil {
+		result.TLS = &interfaces.TLSConfig{
+			Enabled:  m.config.TLS.Enabled,
+			CertFile: m.config.TLS.CertFile,
+			KeyFile:  m.config.TLS.KeyFile,
+		}
+	}
+	
+	return result, nil
 }

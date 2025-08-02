@@ -12,6 +12,13 @@ type Config struct {
 	LogLevel   string            `yaml:"log_level"`
 	APIKeys    map[string]string `yaml:"api_keys"`
 	Limits     Limits            `yaml:"limits"`
+	TLS        *TLSConfig        `yaml:"tls"`
+}
+
+type TLSConfig struct {
+	Enabled  bool   `yaml:"enabled"`
+	CertFile string `yaml:"cert_file"`
+	KeyFile  string `yaml:"key_file"`
 }
 
 type Limits struct {

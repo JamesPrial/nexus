@@ -86,6 +86,7 @@ func TestMiddlewareChain(t *testing.T) {
 	// Test that request passes through middleware chain
 	req := httptest.NewRequest("POST", "/test", nil)
 	req.Header.Set("Authorization", "Bearer test-key")
+	req.Header.Set("Content-Type", "application/json")
 	
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, req)
@@ -133,6 +134,7 @@ func TestRateLimiterIntegration(t *testing.T) {
 	// First request should pass
 	req1 := httptest.NewRequest("POST", "/test", nil)
 	req1.Header.Set("Authorization", "Bearer test-key")
+	req1.Header.Set("Content-Type", "application/json")
 	
 	rr1 := httptest.NewRecorder()
 	handler.ServeHTTP(rr1, req1)
@@ -144,6 +146,7 @@ func TestRateLimiterIntegration(t *testing.T) {
 	// Second request should be rate limited
 	req2 := httptest.NewRequest("POST", "/test", nil)
 	req2.Header.Set("Authorization", "Bearer test-key")
+	req2.Header.Set("Content-Type", "application/json")
 	
 	rr2 := httptest.NewRecorder()
 	handler.ServeHTTP(rr2, req2)

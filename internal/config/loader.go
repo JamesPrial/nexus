@@ -47,6 +47,17 @@ func (f *FileLoader) Load() (*interfaces.Config, error) {
 		}
 	}
 	
+	// Convert Metrics config
+	result.Metrics = interfaces.MetricsConfig{
+		Enabled:           cfg.Metrics.Enabled,
+		MetricsEndpoint:   cfg.Metrics.MetricsEndpoint,
+		PrometheusEnabled: cfg.Metrics.PrometheusEnabled,
+		JSONExportEnabled: cfg.Metrics.JSONExportEnabled,
+		CSVExportEnabled:  cfg.Metrics.CSVExportEnabled,
+		AuthRequired:      cfg.Metrics.AuthRequired,
+		MaskAPIKeys:       cfg.Metrics.MaskAPIKeys,
+	}
+	
 	return result, nil
 }
 

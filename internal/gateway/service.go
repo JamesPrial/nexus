@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jamesprial/nexus/internal/interfaces"
+	"github.com/jamesprial/nexus/internal/metrics"
 )
 
 // Service implements interfaces.Gateway using dependency injection
@@ -31,13 +32,25 @@ func (s *Service) Start() error {
 		return fmt.Errorf("configuration not loaded")
 	}
 
-	handler := s.container.BuildHandler()
+	// Create main handler
+	mainHandler := s.container.BuildHandler()
+	
+	// Create mux for routing
+	mux := http.NewServeMux()
+	
+	// Register metrics endpoints if metrics are enabled
+	if config.Metrics.Enabled {
+		s.registerMetricsEndpoints(mux, config)
+	}
+	
+	// Register catch-all handler for proxy
+	mux.Handle("/", mainHandler)
 	
 	listenAddr := fmt.Sprintf(":%d", config.ListenPort)
 	
 	s.server = &http.Server{
 		Addr:         listenAddr,
-		Handler:      handler,
+		Handler:      mux,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -118,4 +131,44 @@ func (s *Service) Health() map[string]any {
 	}
 
 	return health
+}
+
+// registerMetricsEndpoints registers metrics endpoints with the mux
+func (s *Service) registerMetricsEndpoints(mux *http.ServeMux, config *interfaces.Config) {
+	collector := s.container.MetricsCollector()
+	if collector == nil {
+		return
+	}
+
+	// Create exporter
+	exporter := metrics.NewMetricsExporter(collector)
+	
+	// Set up authentication keys (empty if auth not required)
+	var allowedKeys []string
+	if config.Metrics.AuthRequired {
+		// For now, use all API keys as allowed keys
+		// In production, you might want separate metrics keys
+		for _, key := range config.APIKeys {
+			allowedKeys = append(allowedKeys, key)
+		}
+	}
+
+	// Register authenticated metrics handler
+	metricsEndpoint := config.Metrics.MetricsEndpoint
+	if metricsEndpoint == "" {
+		metricsEndpoint = "/metrics"
+	}
+	
+	metricsHandler := metrics.AuthenticatedExportHandler(exporter, &config.Metrics, allowedKeys)
+	mux.Handle(metricsEndpoint, metricsHandler)
+
+	if s.logger != nil {
+		s.logger.Info("Registered metrics endpoints", map[string]any{
+			"endpoint":            metricsEndpoint,
+			"prometheus_enabled":  config.Metrics.PrometheusEnabled,
+			"json_export_enabled": config.Metrics.JSONExportEnabled,
+			"csv_export_enabled":  config.Metrics.CSVExportEnabled,
+			"auth_required":       config.Metrics.AuthRequired,
+		})
+	}
 }

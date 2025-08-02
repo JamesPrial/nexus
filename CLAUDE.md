@@ -25,8 +25,9 @@ ln -s ../agents .claude/agents
 3. nexus-rapid-impl → Makes tests pass with minimal code (GREEN)  
 4. nexus-perf-optimizer → Optimizes if performance benchmarks fail
 5. code-refactor → Improves code quality (REFACTOR)
-6. Push branch → git push -u origin feat/feature-name
-7. Create PR → Use GitHub CLI or web interface
+6. nexus-integration-tester → Validates end-to-end functionality
+7. Push branch → git push -u origin feat/feature-name
+8. Create PR → Use GitHub CLI or web interface
 ```
 
 **Example Usage:**
@@ -38,6 +39,9 @@ git checkout -b feat/jwt-authentication
 "Use nexus-test-designer to create tests for JWT authentication"
 
 # After all tests pass and code is clean:
+"Use nexus-integration-tester to validate JWT auth through full middleware chain"
+
+# When integration tests pass:
 git add .
 git commit -m "feat: add JWT authentication with comprehensive tests"
 git push -u origin feat/jwt-authentication
@@ -115,7 +119,11 @@ internal/
 │   ├── component_test.go     # Unit tests (REQUIRED)
 │   └── component_bench_test.go # Benchmarks (for performance-critical code)
 tests/
-└── integration_test.go       # Full request flow tests
+├── integration_test.go       # Full request flow tests
+└── e2e/                     # End-to-end test scenarios
+    ├── auth_flow_test.go    # Complete auth scenarios
+    ├── ratelimit_test.go    # Rate limiting under load
+    └── proxy_chain_test.go  # Full middleware chain
 ```
 
 ### Test Requirements
@@ -124,6 +132,8 @@ tests/
 - **Benchmarks**: Required for any code in hot paths
 - **Race Detection**: All tests must pass with `-race`
 - **Independence**: Tests must run in parallel
+- **Integration**: Every feature must include end-to-end validation
+- **Load Testing**: Rate limiters must handle 10K+ concurrent clients
 
 ### Using Test Agents
 
@@ -283,11 +293,12 @@ golangci-lint run  # Lint code
 
 | Task | Primary Agent | Automatic Flow |
 |------|--------------|----------------|
-| New Feature | nexus-test-designer | Tests → Implementation → Optimization → Refactor |
+| New Feature | nexus-test-designer | Tests → Implementation → Optimization → Refactor → Integration |
 | Bug Fix | test-debugger | Debug → Fix → Test → Refactor |
 | Performance | nexus-perf-optimizer | Profile → Optimize → Benchmark → Validate |
 | Security | security-auditor | Audit → Test → Fix → Validate |
 | Code Review | code-reviewer | Review → Feedback → Fix → Approve |
+| Integration | nexus-integration-tester | Setup → Test Flows → Validate → Report |
 
 ## 📋 Configuration
 
@@ -322,10 +333,13 @@ git checkout -b feat/custom-auth-headers
 # 4. Run tests continuously
 reflex -r '\.go$' -- go test ./...
 
-# 5. Check coverage before commit
+# 5. Run integration tests before commit
+"Use nexus-integration-tester to validate custom auth headers through full request flow"
+
+# 6. Check coverage before commit
 make test-coverage
 
-# 6. Commit with descriptive message
+# 7. Commit with descriptive message
 git add .
 git commit -m "feat: add support for custom auth headers
 
@@ -333,7 +347,7 @@ git commit -m "feat: add support for custom auth headers
 - Adds configuration for custom header names
 - Includes comprehensive test coverage"
 
-# 7. Push and create PR
+# 8. Push and create PR
 git push -u origin feat/custom-auth-headers
 gh pr create --title "Add custom auth header support" \
   --body "Adds configurable auth headers with full test coverage"

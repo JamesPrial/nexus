@@ -26,9 +26,15 @@ ln -s ../agents .claude/agents
 4. nexus-perf-optimizer → Optimizes if performance benchmarks fail
 5. code-refactor → Improves code quality (REFACTOR)
 6. nexus-integration-tester → Validates end-to-end functionality
-7. Push branch → git push -u origin feat/feature-name
-8. Create PR → Use GitHub CLI or web interface
+7. Run linters → golangci-lint run (MUST PASS - no linting PRs!)
+8. Push branch → git push -u origin feat/feature-name
+9. Create PR → Use GitHub CLI or web interface with DETAILED description
 ```
+
+**⚠️ CRITICAL LINTING REQUIREMENT:**
+- **ALWAYS** run `golangci-lint run` before pushing code
+- **NEVER** push code with linting errors - this creates unnecessary fix PRs
+- **FIX** all linting issues as part of your feature work
 
 **Example Usage:**
 ```bash
@@ -42,12 +48,34 @@ git checkout -b feat/jwt-authentication
 "Use nexus-integration-tester to validate JWT auth through full middleware chain"
 
 # When integration tests pass:
+
+# CRITICAL: Run linters before ANY commit/push
+golangci-lint run
+
+# Fix any linting issues found, then:
 git add .
 git commit -m "feat: add JWT authentication with comprehensive tests"
 git push -u origin feat/jwt-authentication
 
-# Create PR for review
-gh pr create --title "Add JWT authentication" --body "Implements JWT auth with full test coverage"
+# Create PR for review with FULL description
+gh pr create --title "feat: add JWT authentication" \
+  --body "## Summary
+- Add JWT authentication middleware
+- Implement token validation and refresh
+- Include comprehensive test coverage (95%+)
+
+## Details  
+JWT auth using RS256 with automatic refresh and configurable expiration.
+
+## Testing
+- Unit tests: 95% coverage
+- Integration tests: Full auth flow
+- All linting checks pass with golangci-lint
+
+## Checklist
+- [x] golangci-lint run passes
+- [x] All tests pass
+- [x] No security vulnerabilities"
 ```
 
 ## 🏗️ Architecture Overview

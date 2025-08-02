@@ -11,6 +11,7 @@ import (
 	"github.com/jamesprial/nexus/internal/auth"
 	"github.com/jamesprial/nexus/internal/interfaces"
 	"github.com/jamesprial/nexus/internal/logging"
+	"github.com/jamesprial/nexus/internal/metrics"
 	"github.com/jamesprial/nexus/internal/middleware"
 	"github.com/jamesprial/nexus/internal/proxy"
 	"golang.org/x/time/rate"
@@ -18,15 +19,17 @@ import (
 
 // Container holds all application dependencies
 type Container struct {
-	configLoader   interfaces.ConfigLoader
-	rateLimiter    interfaces.RateLimiter
-	tokenLimiter   interfaces.RateLimiter
-	tokenCounter   interfaces.TokenCounter
-	proxy          interfaces.Proxy
-	logger         interfaces.Logger
-	config         *interfaces.Config
-	keyManager     interfaces.KeyManager
-	authMiddleware *auth.AuthMiddleware
+	configLoader      interfaces.ConfigLoader
+	rateLimiter       interfaces.RateLimiter
+	tokenLimiter      interfaces.RateLimiter
+	tokenCounter      interfaces.TokenCounter
+	proxy             interfaces.Proxy
+	logger            interfaces.Logger
+	config            *interfaces.Config
+	keyManager        interfaces.KeyManager
+	authMiddleware    *auth.AuthMiddleware
+	metricsCollector  interfaces.MetricsCollector
+	metricsMiddleware func(http.Handler) http.Handler
 }
 
 // New creates a new dependency injection container
@@ -77,6 +80,16 @@ func (c *Container) TokenCounter() interfaces.TokenCounter {
 // Proxy returns the proxy handler
 func (c *Container) Proxy() interfaces.Proxy {
 	return c.proxy
+}
+
+// MetricsCollector returns the metrics collector instance
+func (c *Container) MetricsCollector() interfaces.MetricsCollector {
+	return c.metricsCollector
+}
+
+// MetricsMiddleware returns the metrics middleware function
+func (c *Container) MetricsMiddleware() func(http.Handler) http.Handler {
+	return c.metricsMiddleware
 }
 
 // Initialize loads configuration and sets up all dependencies
@@ -150,6 +163,12 @@ func (c *Container) Initialize() error {
 		Logger:       c.logger,
 	}
 
+	// Set up metrics collector if enabled
+	if cfg.Metrics.Enabled {
+		c.metricsCollector = metrics.NewMetricsCollector()
+		c.metricsMiddleware = metrics.MetricsMiddleware(c.metricsCollector)
+	}
+
 	return nil
 }
 
@@ -159,10 +178,16 @@ func (c *Container) BuildHandler() http.Handler {
 		panic("container not initialized")
 	}
 
-	// Build middleware chain: validation -> auth -> rateLimiter -> tokenLimiter -> proxy
+	// Build middleware chain: validation -> auth -> metrics -> rateLimiter -> tokenLimiter -> proxy
 	var handler http.Handler = http.HandlerFunc(c.proxy.ServeHTTP)
 	handler = c.tokenLimiter.Middleware(handler)
 	handler = c.rateLimiter.Middleware(handler)
+	
+	// Add metrics middleware if available
+	if c.metricsMiddleware != nil {
+		handler = c.metricsMiddleware(handler)
+	}
+	
 	handler = c.authMiddleware.Middleware(handler)
 	
 	// Add request validation as the outermost middleware

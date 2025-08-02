@@ -28,3 +28,13 @@ limits:
 #   enabled: true
 #   cert_file: "/path/to/cert.pem"
 #   key_file: "/path/to/key.pem"
+
+# Metrics configuration
+metrics:
+  enabled: true
+  metrics_endpoint: "/metrics"
+  prometheus_enabled: true
+  json_export_enabled: true
+  csv_export_enabled: true
+  auth_required: false
+  mask_api_keys: true

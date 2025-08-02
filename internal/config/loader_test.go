@@ -83,7 +83,7 @@ limits:
 				if cfg.LogLevel != "" {
 					t.Error("Expected empty LogLevel")
 				}
-				if cfg.APIKeys != nil && len(cfg.APIKeys) > 0 {
+				if len(cfg.APIKeys) > 0 {
 					t.Error("Expected no API keys")
 				}
 				if cfg.TLS != nil {

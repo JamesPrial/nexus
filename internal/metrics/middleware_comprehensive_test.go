@@ -1,11 +1,8 @@
 package metrics
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -18,57 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// mockTokenExtractor implements context-based token and model extraction
-type mockTokenExtractor struct{}
-
-func (m *mockTokenExtractor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Extract model from request
-	model := "unknown"
-	if r.URL.Path == "/v1/chat/completions" {
-		// Try to parse request body for model
-		if r.Body != nil {
-			body, err := io.ReadAll(r.Body)
-			if err == nil {
-				r.Body = io.NopCloser(bytes.NewReader(body)) // Restore body for next middleware
-				
-				var requestData map[string]interface{}
-				if json.Unmarshal(body, &requestData) == nil {
-					if modelVal, ok := requestData["model"].(string); ok {
-						model = modelVal
-					}
-				}
-			}
-		}
-	} else if r.URL.Path == "/v1/embeddings" {
-		model = "text-embedding-ada-002"
-	}
-
-	// Add to context
-	ctx := context.WithValue(r.Context(), "model", model)
-	
-	// Simulate response with token count
-	tokens := 100 // Default
-	if strings.Contains(r.URL.Path, "completions") {
-		tokens = 150
-	} else if strings.Contains(r.URL.Path, "embeddings") {
-		tokens = 50
-	}
-	
-	ctx = context.WithValue(ctx, "tokens", tokens)
-	
-	// Mock successful response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	response := map[string]interface{}{
-		"usage": map[string]interface{}{
-			"total_tokens": tokens,
-		},
-	}
-	json.NewEncoder(w).Encode(response)
-	
-	*r = *r.WithContext(ctx)
-}
-
 // TestMetricsMiddlewareBasicFunctionality verifies basic middleware operation
 func TestMetricsMiddlewareBasicFunctionality(t *testing.T) {
 	collector := NewMetricsCollector()
@@ -77,7 +23,7 @@ func TestMetricsMiddlewareBasicFunctionality(t *testing.T) {
 	// Create a simple handler that the middleware will wrap
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("success"))
+		_, _ = w.Write([]byte("success"))
 	})
 
 	wrappedHandler := middleware(handler)
@@ -371,13 +317,13 @@ func TestMetricsMiddlewareWithTokenExtraction(t *testing.T) {
 		}
 
 		// Store in context (this is where token counter would put it)
-		ctx = context.WithValue(ctx, "extracted_model", model)
-		ctx = context.WithValue(ctx, "extracted_tokens", tokens)
+		ctx = context.WithValue(ctx, ModelContextKey, model)
+		ctx = context.WithValue(ctx, TokensContextKey, tokens)
 		*r = *r.WithContext(ctx)
 
 		w.WriteHeader(http.StatusOK)
 		response := fmt.Sprintf(`{"model":"%s","usage":{"total_tokens":%d}}`, model, tokens)
-		w.Write([]byte(response))
+		_, _ = w.Write([]byte(response))
 	})
 
 	wrappedHandler := middleware(handler)
@@ -552,14 +498,14 @@ func TestMetricsMiddlewareResponseWriterWrapping(t *testing.T) {
 			name: "write_header_called_explicitly",
 			writeActions: func(w http.ResponseWriter) {
 				w.WriteHeader(http.StatusCreated)
-				w.Write([]byte("created"))
+				_, _ = w.Write([]byte("created"))
 			},
 			expectedCode: http.StatusCreated,
 		},
 		{
 			name: "write_header_implicit",
 			writeActions: func(w http.ResponseWriter) {
-				w.Write([]byte("implicit 200"))
+				_, _ = w.Write([]byte("implicit 200"))
 			},
 			expectedCode: http.StatusOK,
 		},
@@ -568,7 +514,7 @@ func TestMetricsMiddlewareResponseWriterWrapping(t *testing.T) {
 			writeActions: func(w http.ResponseWriter) {
 				w.WriteHeader(http.StatusBadRequest)
 				w.WriteHeader(http.StatusInternalServerError) // Should be ignored
-				w.Write([]byte("first status wins"))
+				_, _ = w.Write([]byte("first status wins"))
 			},
 			expectedCode: http.StatusBadRequest,
 		},
@@ -578,7 +524,7 @@ func TestMetricsMiddlewareResponseWriterWrapping(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				w.Header().Set("X-Custom-Header", "test-value")
 				w.WriteHeader(http.StatusAccepted)
-				w.Write([]byte(`{"status":"accepted"}`))
+				_, _ = w.Write([]byte(`{"status":"accepted"}`))
 			},
 			expectedCode: http.StatusAccepted,
 		},
@@ -660,7 +606,7 @@ func TestMetricsMiddlewareIntegrationWithRealRequests(t *testing.T) {
 		time.Sleep(delay)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
-		w.Write([]byte(responseBody))
+		_, _ = w.Write([]byte(responseBody))
 	})
 
 	wrappedHandler := middleware(handler)

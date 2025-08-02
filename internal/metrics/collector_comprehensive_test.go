@@ -349,23 +349,23 @@ func TestMetricsCollectorEdgeCases(t *testing.T) {
 	collector := NewMetricsCollector()
 
 	t.Run("empty_strings", func(t *testing.T) {
-		// Should handle empty strings gracefully
+		// Should handle empty strings gracefully by converting to "unknown"
 		collector.RecordRequest("", "", "", 0, 200, 0)
 		
 		metrics := collector.GetMetrics()
-		require.Contains(t, metrics, "")
+		require.Contains(t, metrics, "unknown")
 		
-		keyMetrics := metrics[""].(*KeyMetrics)
+		keyMetrics := metrics["unknown"].(*KeyMetrics)
 		assert.Equal(t, int64(1), keyMetrics.TotalRequests)
 	})
 
 	t.Run("negative_tokens", func(t *testing.T) {
-		// Should handle negative tokens (shouldn't happen but let's be defensive)
+		// Should handle negative tokens by converting to 0
 		collector.RecordRequest("test-key", "/test", "model", -100, 200, 100*time.Millisecond)
 		
 		metrics := collector.GetMetrics()
 		keyMetrics := metrics["test-key"].(*KeyMetrics)
-		assert.Equal(t, int64(-100), keyMetrics.TotalTokensConsumed)
+		assert.Equal(t, int64(0), keyMetrics.TotalTokensConsumed)
 	})
 
 	t.Run("zero_duration", func(t *testing.T) {
@@ -378,12 +378,13 @@ func TestMetricsCollectorEdgeCases(t *testing.T) {
 	})
 
 	t.Run("very_long_strings", func(t *testing.T) {
-		// Test with very long strings
+		// Test with very long strings - should be truncated to 255 chars
 		longString := strings.Repeat("a", 10000)
+		expectedKey := strings.Repeat("a", 255) // Truncated to 255 chars
 		collector.RecordRequest(longString, longString, longString, 100, 200, 100*time.Millisecond)
 		
 		metrics := collector.GetMetrics()
-		assert.Contains(t, metrics, longString)
+		assert.Contains(t, metrics, expectedKey)
 	})
 
 	t.Run("unusual_status_codes", func(t *testing.T) {

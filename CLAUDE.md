@@ -34,14 +34,17 @@ ln -s ../agents .claude/agents
 **ALL feature development follows this MANDATORY flow:**
 
 ```
-1. Create feature branch → git checkout -b feat/feature-name
-2. nexus-test-designer → Creates comprehensive failing tests (RED)
-3. nexus-rapid-impl → Makes tests pass with minimal code (GREEN)  
-4. nexus-perf-optimizer → Optimizes if performance benchmarks fail
-5. code-refactor → Improves code quality (REFACTOR)
-6. Push branch → git push -u origin feat/feature-name
-7. Create PR → Use GitHub CLI or web interface
+1. preflight-validator → Ensures proper branch and setup ⚠️ NEVER SKIP THIS
+2. Create feature branch → git checkout -b feat/feature-name (if not already on one)
+3. nexus-test-designer → Creates comprehensive failing tests (RED)
+4. nexus-rapid-impl → Makes tests pass with minimal code (GREEN)  
+5. nexus-perf-optimizer → Optimizes if performance benchmarks fail
+6. code-refactor → Improves code quality (REFACTOR)
+7. Push branch → git push -u origin feat/feature-name
+8. Create PR → Use GitHub CLI or web interface
 ```
+
+**⚠️ CRITICAL: Each agent includes branch validation. If ANY agent detects you're on main/master, it will STOP and require branch creation first.**
 
 **Example Usage:**
 ```bash

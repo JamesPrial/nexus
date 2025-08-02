@@ -165,7 +165,7 @@ func TestHTTPProxy_ServeHTTP(t *testing.T) {
 	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Backend", "true")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	}))
 	defer backend.Close()
 
@@ -496,7 +496,7 @@ func BenchmarkDefaultTokenCounter(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		req := httptest.NewRequest("POST", "/test", strings.NewReader(body))
-		counter.CountTokens(req)
+		_, _ = counter.CountTokens(req)
 	}
 }
 

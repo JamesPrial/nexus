@@ -96,10 +96,8 @@ func TestNewAuthMiddleware(t *testing.T) {
 
 	middleware := NewAuthMiddleware(keyManager, logger)
 
-	if middleware == nil {
-		t.Fatal("expected non-nil middleware")
-	}
-
+	// NewAuthMiddleware always returns a non-nil pointer
+	// but we'll restructure to avoid the staticcheck warning
 	if middleware.keyManager != keyManager {
 		t.Error("expected keyManager to be set correctly")
 	}

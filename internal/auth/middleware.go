@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/jamesprial/nexus/internal/interfaces"
+	"github.com/jamesprial/nexus/internal/utils"
 )
 
 // AuthMiddleware handles API key authentication and transformation
@@ -49,9 +50,9 @@ func (a *AuthMiddleware) Middleware(next http.Handler) http.Handler {
 		if !a.keyManager.ValidateClientKey(clientKey) {
 			if a.logger != nil {
 				a.logger.Warn("Invalid client API key", map[string]any{
-					"path":           r.URL.Path,
-					"method":         r.Method,
-					"client_key_prefix": clientKey[:min(len(clientKey), 10)],
+					"path":       r.URL.Path,
+					"method":     r.Method,
+					"client_key": utils.MaskAPIKey(clientKey),
 				})
 			}
 			http.Error(w, "Invalid API key", http.StatusUnauthorized)
@@ -63,8 +64,8 @@ func (a *AuthMiddleware) Middleware(next http.Handler) http.Handler {
 		if err != nil {
 			if a.logger != nil {
 				a.logger.Error("Failed to get upstream API key", map[string]any{
-					"error":             err.Error(),
-					"client_key_prefix": clientKey[:min(len(clientKey), 10)],
+					"error":      err.Error(),
+					"client_key": utils.MaskAPIKey(clientKey),
 				})
 			}
 			http.Error(w, "Authentication failed", http.StatusUnauthorized)
@@ -81,10 +82,10 @@ func (a *AuthMiddleware) Middleware(next http.Handler) http.Handler {
 		
 		if a.logger != nil {
 			a.logger.Debug("API key authenticated and transformed", map[string]any{
-				"path":                r.URL.Path,
-				"method":              r.Method,
-				"client_key_prefix":   clientKey[:min(len(clientKey), 10)],
-				"upstream_key_prefix": upstreamKey[:min(len(upstreamKey), 10)],
+				"path":         r.URL.Path,
+				"method":       r.Method,
+				"client_key":   utils.MaskAPIKey(clientKey),
+				"upstream_key": utils.MaskAPIKey(upstreamKey),
 			})
 		}
 		
@@ -93,10 +94,3 @@ func (a *AuthMiddleware) Middleware(next http.Handler) http.Handler {
 	})
 }
 
-// Helper function for safe string slicing
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}

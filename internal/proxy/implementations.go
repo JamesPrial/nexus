@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/jamesprial/nexus/internal/interfaces"
+	"github.com/jamesprial/nexus/internal/utils"
 	"golang.org/x/time/rate"
 )
 
@@ -93,9 +95,22 @@ func (h *HTTPProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // SetTarget changes the upstream target URL
 func (h *HTTPProxy) SetTarget(targetURL string) error {
+	// Validate input
+	if strings.TrimSpace(targetURL) == "" {
+		return fmt.Errorf("target URL cannot be empty")
+	}
+
 	target, err := url.Parse(targetURL)
 	if err != nil {
 		return fmt.Errorf("failed to parse target URL: %w", err)
+	}
+
+	// Validate parsed URL
+	if target.Scheme == "" {
+		return fmt.Errorf("target URL must have a scheme")
+	}
+	if target.Host == "" {
+		return fmt.Errorf("target URL must have a host")
 	}
 
 	h.mu.Lock()
@@ -134,8 +149,8 @@ func (r *perClientRateLimiterWithLogger) Middleware(next http.Handler) http.Hand
 		apiKey := req.Header.Get("Authorization")
 		if r.logger != nil {
 			r.logger.Debug("Per-client rate limit check", map[string]any{
-				"path":           req.URL.Path,
-				"api_key_prefix": apiKey[:min(len(apiKey), 10)],
+				"path":    req.URL.Path,
+				"api_key": utils.MaskAPIKey(apiKey),
 			})
 		}
 		originalMiddleware.ServeHTTP(w, req)
@@ -157,7 +172,7 @@ func (r *perClientRateLimiterWithLogger) Reset(apiKey string) {
 
 	if r.logger != nil {
 		r.logger.Info("Reset per-client rate limit", map[string]any{
-			"api_key_prefix": apiKey[:min(len(apiKey), 10)],
+			"api_key": utils.MaskAPIKey(apiKey),
 		})
 	}
 }
@@ -202,7 +217,7 @@ func (r *globalRateLimiterWithLogger) Reset(apiKey string) {
 	// Cannot reset the global limiter on a per-key basis.
 	if r.logger != nil {
 		r.logger.Warn("Attempted to reset global rate limiter for a single key", map[string]any{
-			"api_key_prefix": apiKey[:min(len(apiKey), 10)],
+			"api_key": utils.MaskAPIKey(apiKey),
 		})
 	}
 }
@@ -252,8 +267,8 @@ func (t *tokenLimiterWithDeps) Middleware(next http.Handler) http.Handler {
 		if err != nil {
 			if t.logger != nil {
 				t.logger.Error("Token counting failed", map[string]any{
-					"error":          err.Error(),
-					"api_key_prefix": apiKey[:min(len(apiKey), 10)],
+					"error":   err.Error(),
+					"api_key": utils.MaskAPIKey(apiKey),
 				})
 			}
 			http.Error(w, "Invalid request format", http.StatusBadRequest)
@@ -263,7 +278,7 @@ func (t *tokenLimiterWithDeps) Middleware(next http.Handler) http.Handler {
 		if !limiter.AllowN(time.Now(), tokenCount) {
 			if t.logger != nil {
 				t.logger.Warn("Token limit exceeded", map[string]any{
-					"api_key_prefix":   apiKey[:min(len(apiKey), 10)],
+					"api_key":          utils.MaskAPIKey(apiKey),
 					"tokens_needed":    tokenCount,
 					"tokens_available": limiter.Tokens(),
 				})
@@ -274,7 +289,7 @@ func (t *tokenLimiterWithDeps) Middleware(next http.Handler) http.Handler {
 
 		if t.logger != nil {
 			t.logger.Debug("Token limit check passed", map[string]any{
-				"api_key_prefix":   apiKey[:min(len(apiKey), 10)],
+				"api_key":          utils.MaskAPIKey(apiKey),
 				"tokens_used":      tokenCount,
 				"tokens_remaining": limiter.Tokens(),
 			})
@@ -307,15 +322,8 @@ func (t *tokenLimiterWithDeps) Reset(apiKey string) {
 
 	if t.logger != nil {
 		t.logger.Info("Reset token limit for API key", map[string]any{
-			"api_key_prefix": apiKey[:min(len(apiKey), 10)],
+			"api_key": utils.MaskAPIKey(apiKey),
 		})
 	}
 }
 
-// Helper function for safe string slicing
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}

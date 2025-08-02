@@ -5,11 +5,13 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"time"
 
 	"github.com/jamesprial/nexus/config"
 	"github.com/jamesprial/nexus/internal/auth"
 	"github.com/jamesprial/nexus/internal/interfaces"
 	"github.com/jamesprial/nexus/internal/logging"
+	"github.com/jamesprial/nexus/internal/middleware"
 	"github.com/jamesprial/nexus/internal/proxy"
 	"golang.org/x/time/rate"
 )
@@ -106,22 +108,35 @@ func (c *Container) Initialize() error {
 	// Set up token counter
 	c.tokenCounter = &proxy.DefaultTokenCounter{}
 
-	// Set up rate limiter
-	c.rateLimiter = proxy.NewPerClientRateLimiterWithLogger(
+	// Set up rate limiter with TTL (1 hour)
+	ttl := 1 * time.Hour
+	perClientLimiter := proxy.NewPerClientRateLimiterWithTTL(
 		rate.Limit(cfg.Limits.RequestsPerSecond),
 		cfg.Limits.Burst,
+		ttl,
 		c.logger,
 	)
+	c.rateLimiter = perClientLimiter
 
-	// Set up token limiter with proper burst calculation
+	// Start cleanup routine for per-client rate limiter
+	stopChan := make(chan struct{})
+	go perClientLimiter.StartCleanup(5*time.Minute, stopChan)
+
+	// Set up token limiter with proper burst calculation and TTL
 	tokenBurst := max(cfg.Limits.ModelTokensPerMinute/6, 100)
 
-	c.tokenLimiter = proxy.NewTokenLimiterWithDeps(
+	tokenLimiter := proxy.NewTokenLimiterWithTTL(
 		cfg.Limits.ModelTokensPerMinute,
 		tokenBurst,
 		c.tokenCounter,
+		ttl,
 		c.logger,
 	)
+	c.tokenLimiter = tokenLimiter
+
+	// Start cleanup routine for token limiter
+	stopChan2 := make(chan struct{})
+	go tokenLimiter.StartCleanup(5*time.Minute, stopChan2)
 
 	// Set up proxy
 	target, err := url.Parse(cfg.TargetURL)
@@ -144,11 +159,16 @@ func (c *Container) BuildHandler() http.Handler {
 		panic("container not initialized")
 	}
 
-	// Build middleware chain: auth -> rateLimiter -> tokenLimiter -> proxy
+	// Build middleware chain: validation -> auth -> rateLimiter -> tokenLimiter -> proxy
 	var handler http.Handler = http.HandlerFunc(c.proxy.ServeHTTP)
 	handler = c.tokenLimiter.Middleware(handler)
 	handler = c.rateLimiter.Middleware(handler)
 	handler = c.authMiddleware.Middleware(handler)
+	
+	// Add request validation as the outermost middleware
+	// Default to 10MB max body size
+	validationMiddleware := middleware.NewRequestValidationMiddleware(10 * 1024 * 1024)
+	handler = validationMiddleware(handler)
 
 	return handler
 }

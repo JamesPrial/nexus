@@ -53,7 +53,23 @@ func (s *Service) Start() error {
 	// Start server in goroutine so Start() doesn't block
 	errCh := make(chan error, 1)
 	go func() {
-		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		var err error
+		if config.TLS != nil && config.TLS.Enabled {
+			if s.logger != nil {
+				s.logger.Info("Starting HTTPS server", map[string]any{
+					"cert_file": config.TLS.CertFile,
+					"key_file":  config.TLS.KeyFile,
+				})
+			}
+			err = s.server.ListenAndServeTLS(config.TLS.CertFile, config.TLS.KeyFile)
+		} else {
+			if s.logger != nil {
+				s.logger.Info("Starting HTTP server (no TLS)", map[string]any{})
+			}
+			err = s.server.ListenAndServe()
+		}
+		
+		if err != nil && err != http.ErrServerClosed {
 			errCh <- err
 		}
 		close(errCh)

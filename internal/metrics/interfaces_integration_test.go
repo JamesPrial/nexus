@@ -353,6 +353,7 @@ func TestMetricsInterfaceCompliance(t *testing.T) {
 		
 		// Should not panic and should provide metrics
 		// Actual metrics may be empty if no data recorded
+		_ = metrics // Metrics collected successfully
 	})
 	
 	t.Run("http_handler_compliance", func(t *testing.T) {
@@ -467,7 +468,7 @@ func TestMetricsExtensibilityInterface(t *testing.T) {
 				
 				// Add request ID to context (example)
 				requestID := fmt.Sprintf("req-%d", time.Now().UnixNano())
-				ctx := context.WithValue(r.Context(), "request_id", requestID)
+				ctx := context.WithValue(r.Context(), contextKey("request_id"), requestID)
 				r = r.WithContext(ctx)
 				
 				// Call next handler

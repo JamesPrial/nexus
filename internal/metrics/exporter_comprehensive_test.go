@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -394,23 +393,4 @@ func TestMetricsExportIntegration(t *testing.T) {
 		// Verify histogram contains expected number of samples
 		assert.Contains(t, body, "request_latency_seconds_count 5", "Should show 5 total samples")
 	})
-}
-
-// Helper function to parse Prometheus metrics
-func parsePrometheusMetrics(body string) map[string]string {
-	lines := strings.Split(body, "\n")
-	metrics := make(map[string]string)
-	
-	for _, line := range lines {
-		if strings.HasPrefix(line, "#") || line == "" {
-			continue
-		}
-		
-		parts := strings.Fields(line)
-		if len(parts) >= 2 {
-			metrics[parts[0]] = parts[1]
-		}
-	}
-	
-	return metrics
 }

@@ -126,7 +126,7 @@ limits:
   model_tokens_per_minute: 100
 `,
 			validate: func(t *testing.T, cfg *Config) {
-				if cfg.APIKeys != nil && len(cfg.APIKeys) > 0 {
+				if len(cfg.APIKeys) > 0 {
 					t.Error("Expected no API keys in minimal config")
 				}
 				if cfg.LogLevel != "" {

@@ -82,20 +82,20 @@ func TestMetricsMiddlewareAuthorizationExtraction(t *testing.T) {
 		{
 			name:           "no_authorization_header",
 			authHeader:     "",
-			expectRecorded: false,
+			expectRecorded: true,
 			expectedKey:    "",
 		},
 		{
 			name:           "invalid_authorization_format",
 			authHeader:     "Basic dXNlcjpwYXNz",
-			expectRecorded: false,
-			expectedKey:    "",
+			expectRecorded: true,
+			expectedKey:    "Basic dXNlcjpwYXNz",
 		},
 		{
 			name:           "bearer_lowercase",
 			authHeader:     "bearer lowercase-bearer",
-			expectRecorded: false, // Current implementation is case-sensitive
-			expectedKey:    "",
+			expectRecorded: true, // Record all requests, even invalid auth
+			expectedKey:    "bearer lowercase-bearer",
 		},
 		{
 			name:           "empty_bearer_token",
@@ -139,8 +139,6 @@ func TestMetricsMiddlewareAuthorizationExtraction(t *testing.T) {
 
 // TestMetricsMiddlewareStatusCodeHandling verifies status code categorization
 func TestMetricsMiddlewareStatusCodeHandling(t *testing.T) {
-	collector := NewMetricsCollector()
-	middleware := MetricsMiddleware(collector)
 
 	testCases := []struct {
 		name               string
@@ -169,6 +167,10 @@ func TestMetricsMiddlewareStatusCodeHandling(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			// Create fresh collector for each test to avoid shared state
+			collector := NewMetricsCollector()
+			middleware := MetricsMiddleware(collector)
+			
 			// Create handler that returns specific status code
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tc.statusCode)

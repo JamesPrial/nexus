@@ -644,7 +644,19 @@ func TestMetricsInputValidation(t *testing.T) {
 				
 				// Verify data was recorded
 				metrics := collector.GetMetrics()
-				assert.Contains(t, metrics, test.apiKey, 
+				
+				// For very long strings, we expect them to be sanitized and truncated
+				expectedKey := test.apiKey
+				if test.apiKey != "" && len(test.apiKey) > 255 {
+					// Simulate the sanitization process
+					sanitized := test.apiKey
+					// Remove null bytes and control characters (none in our test)
+					// Remove injection patterns (none in our test of repeated 'a')
+					// Truncate to 255 characters
+					expectedKey = sanitized[:255]
+				}
+				
+				assert.Contains(t, metrics, expectedKey, 
 					"Should record metrics for: %s", test.desc)
 			} else {
 				// If we decide to add validation that rejects certain inputs

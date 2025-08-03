@@ -349,13 +349,15 @@ func TestMetricsCollectorEdgeCases(t *testing.T) {
 	collector := NewMetricsCollector()
 
 	t.Run("empty_strings", func(t *testing.T) {
-		// Should handle empty strings gracefully by converting to "unknown"
+		// Should handle empty strings gracefully 
+		// API keys are preserved as empty (for unauthenticated requests)
+		// Endpoints and models are converted to "unknown"
 		collector.RecordRequest("", "", "", 0, 200, 0)
 		
 		metrics := collector.GetMetrics()
-		require.Contains(t, metrics, "unknown")
+		require.Contains(t, metrics, "")  // Empty API key should be preserved
 		
-		keyMetrics := metrics["unknown"].(*KeyMetrics)
+		keyMetrics := metrics[""].(*KeyMetrics)
 		assert.Equal(t, int64(1), keyMetrics.TotalRequests)
 	})
 

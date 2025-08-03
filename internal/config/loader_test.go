@@ -108,12 +108,12 @@ limits:
 				if err != nil {
 					t.Fatalf("Failed to create temp file: %v", err)
 				}
-				defer os.Remove(tmpfile.Name())
+				defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 				if _, err := tmpfile.Write([]byte(tt.content)); err != nil {
 					t.Fatalf("Failed to write to temp file: %v", err)
 				}
-				tmpfile.Close()
+				_ = tmpfile.Close()
 				filePath = tmpfile.Name()
 			} else {
 				filePath = "/non/existent/path/config.yaml"
@@ -332,12 +332,12 @@ tls:
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpfile.Name())
+	defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 	if _, err := tmpfile.Write([]byte(content)); err != nil {
 		t.Fatalf("Failed to write to temp file: %v", err)
 	}
-	tmpfile.Close()
+	_ = tmpfile.Close()
 
 	// Load with config package directly
 	configPkg, err := config.Load(tmpfile.Name())
@@ -416,12 +416,12 @@ tls:
 	if err != nil {
 		b.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpfile.Name())
+	defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 	if _, err := tmpfile.Write([]byte(content)); err != nil {
 		b.Fatalf("Failed to write to temp file: %v", err)
 	}
-	tmpfile.Close()
+	_ = tmpfile.Close()
 
 	loader := NewFileLoader(tmpfile.Name())
 

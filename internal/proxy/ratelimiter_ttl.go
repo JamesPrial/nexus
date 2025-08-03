@@ -60,22 +60,22 @@ func (r *PerClientRateLimiterWithTTL) updateLastAccess(apiKey string) {
 // getOrCreateLimiter gets or creates a limiter for the given key
 func (r *PerClientRateLimiterWithTTL) getOrCreateLimiter(apiKey string) *rate.Limiter {
 	r.updateLastAccess(apiKey)
-	return r.PerClientRateLimiter.getClient(apiKey)
+	return r.getClient(apiKey)
 }
 
 // HasClient checks if a client is currently tracked
 func (r *PerClientRateLimiterWithTTL) HasClient(apiKey string) bool {
-	r.PerClientRateLimiter.mu.Lock()
-	defer r.PerClientRateLimiter.mu.Unlock()
-	_, exists := r.PerClientRateLimiter.clients[apiKey]
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	_, exists := r.clients[apiKey]
 	return exists
 }
 
 // ClientCount returns the number of tracked clients
 func (r *PerClientRateLimiterWithTTL) ClientCount() int {
-	r.PerClientRateLimiter.mu.Lock()
-	defer r.PerClientRateLimiter.mu.Unlock()
-	return len(r.PerClientRateLimiter.clients)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return len(r.clients)
 }
 
 // StartCleanup starts a goroutine that periodically cleans up expired entries
@@ -112,14 +112,12 @@ func (r *PerClientRateLimiterWithTTL) cleanup() {
 
 	// Remove expired entries
 	r.mu.Lock()
-	r.PerClientRateLimiter.mu.Lock()
 	
 	for _, apiKey := range expired {
 		delete(r.lastAccess, apiKey)
-		delete(r.PerClientRateLimiter.clients, apiKey)
+		delete(r.clients, apiKey)
 	}
 	
-	r.PerClientRateLimiter.mu.Unlock()
 	r.mu.Unlock()
 
 	if r.logger != nil && len(expired) > 0 {
@@ -131,7 +129,7 @@ func (r *PerClientRateLimiterWithTTL) cleanup() {
 
 // GetLimit returns remaining requests for the API key
 func (r *PerClientRateLimiterWithTTL) GetLimit(apiKey string) (allowed bool, remaining int) {
-	limiter := r.PerClientRateLimiter.getClient(apiKey)
+	limiter := r.getClient(apiKey)
 	tokens := limiter.Tokens()
 	return tokens > 0, int(tokens)
 }
@@ -140,11 +138,8 @@ func (r *PerClientRateLimiterWithTTL) GetLimit(apiKey string) (allowed bool, rem
 func (r *PerClientRateLimiterWithTTL) Reset(apiKey string) {
 	r.mu.Lock()
 	delete(r.lastAccess, apiKey)
+	delete(r.clients, apiKey)
 	r.mu.Unlock()
-
-	r.PerClientRateLimiter.mu.Lock()
-	delete(r.PerClientRateLimiter.clients, apiKey)
-	r.PerClientRateLimiter.mu.Unlock()
 
 	if r.logger != nil {
 		r.logger.Info("Reset per-client rate limit", map[string]any{

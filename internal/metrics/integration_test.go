@@ -211,7 +211,7 @@ func TestMetricsEndToEndFlow(t *testing.T) {
 		jsonData := ExportJSON(collector)
 		require.NotEmpty(t, jsonData, "JSON export should not be empty")
 		
-		var exportedMetrics map[string]KeyMetrics
+		var exportedMetrics map[string]map[string]interface{}
 		err := json.Unmarshal(jsonData, &exportedMetrics)
 		require.NoError(t, err, "JSON should be valid")
 		
@@ -226,11 +226,11 @@ func TestMetricsEndToEndFlow(t *testing.T) {
 			collectedKey := collected.(*KeyMetrics)
 			exportedKey := exportedMetrics[key]
 			
-			assert.Equal(t, collectedKey.TotalRequests, exportedKey.TotalRequests,
+			assert.Equal(t, float64(collectedKey.TotalRequests), exportedKey["TotalRequests"].(float64),
 				"Total requests should match for key: %s", key)
-			assert.Equal(t, collectedKey.SuccessfulRequests, exportedKey.SuccessfulRequests,
+			assert.Equal(t, float64(collectedKey.SuccessfulRequests), exportedKey["SuccessfulRequests"].(float64),
 				"Successful requests should match for key: %s", key)
-			assert.Equal(t, collectedKey.FailedRequests, exportedKey.FailedRequests,
+			assert.Equal(t, float64(collectedKey.FailedRequests), exportedKey["FailedRequests"].(float64),
 				"Failed requests should match for key: %s", key)
 		}
 	})

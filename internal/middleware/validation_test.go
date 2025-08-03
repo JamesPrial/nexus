@@ -89,7 +89,7 @@ func TestRequestValidationMiddleware(t *testing.T) {
 			body:         `{"messages":[]}`, // Missing model field
 			contentType:  "application/json",
 			expectStatus: http.StatusBadRequest,
-			expectError:  "Missing required field: model",
+			expectError:  "missing required field: model",
 		},
 	}
 
@@ -189,7 +189,7 @@ func TestRequestValidationMiddleware_HeaderValidation(t *testing.T) {
 				"X-Forwarded-For": "'; DROP TABLE users; --",
 			},
 			expectStatus: http.StatusBadRequest,
-			expectError:  "Invalid header value",
+			expectError:  "invalid header value",
 		},
 		{
 			name: "header too long",
@@ -198,7 +198,7 @@ func TestRequestValidationMiddleware_HeaderValidation(t *testing.T) {
 				"Content-Type":  "application/json",
 			},
 			expectStatus: http.StatusBadRequest,
-			expectError:  "Header too long",
+			expectError:  "header too long",
 		},
 	}
 

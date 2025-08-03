@@ -36,7 +36,7 @@ func TestGlobalRateLimiter(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Request failed: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		// The first 4 requests should be allowed due to the burst capacity.
 		if i < 4 {
@@ -60,7 +60,7 @@ func TestGlobalRateLimiter(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Request failed: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		if resp.StatusCode != http.StatusOK {
 			t.Errorf("Expected status OK after waiting, got %d", resp.StatusCode)

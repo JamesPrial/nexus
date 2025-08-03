@@ -105,7 +105,7 @@ func validateHeaders(r *http.Request) error {
 		for _, value := range values {
 			// Check header length
 			if len(value) > MaxHeaderLength {
-				return fmt.Errorf("Header too long: %s", name)
+				return fmt.Errorf("header too long: %s", name)
 			}
 
 			// Check for SQL injection attempts in headers
@@ -122,7 +122,7 @@ func validateHeaders(r *http.Request) error {
 
 			for _, pattern := range suspiciousPatterns {
 				if strings.Contains(lowerValue, pattern) {
-					return fmt.Errorf("Invalid header value detected")
+					return fmt.Errorf("invalid header value detected")
 				}
 			}
 		}
@@ -136,24 +136,24 @@ func validateRequiredFields(path string, data map[string]interface{}) error {
 	case "/v1/chat/completions":
 		// Check for required fields
 		if _, ok := data["model"]; !ok {
-			return fmt.Errorf("Missing required field: model")
+			return fmt.Errorf("missing required field: model")
 		}
 		if _, ok := data["messages"]; !ok {
-			return fmt.Errorf("Missing required field: messages")
+			return fmt.Errorf("missing required field: messages")
 		}
 	case "/v1/completions":
 		if _, ok := data["model"]; !ok {
-			return fmt.Errorf("Missing required field: model")
+			return fmt.Errorf("missing required field: model")
 		}
 		if _, ok := data["prompt"]; !ok {
-			return fmt.Errorf("Missing required field: prompt")
+			return fmt.Errorf("missing required field: prompt")
 		}
 	case "/v1/embeddings":
 		if _, ok := data["model"]; !ok {
-			return fmt.Errorf("Missing required field: model")
+			return fmt.Errorf("missing required field: model")
 		}
 		if _, ok := data["input"]; !ok {
-			return fmt.Errorf("Missing required field: input")
+			return fmt.Errorf("missing required field: input")
 		}
 	}
 	return nil

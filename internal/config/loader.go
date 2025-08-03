@@ -1,9 +1,24 @@
 package config
 
 import (
-	"github.com/jamesprial/nexus/config"
+	rootconfig "github.com/jamesprial/nexus/config"
 	"github.com/jamesprial/nexus/internal/interfaces"
 )
+
+// Config re-exports the root config type for consistency
+type Config = rootconfig.Config
+
+// TLSConfig re-exports the root TLS config type
+type TLSConfig = rootconfig.TLSConfig
+
+// Limits re-exports the root limits type
+type Limits = rootconfig.Limits
+
+// MetricsConfig re-exports the root metrics config type
+type MetricsConfig = rootconfig.MetricsConfig
+
+// Load re-exports the root config Load function
+var Load = rootconfig.Load
 
 // FileLoader loads configuration from a YAML file
 type FileLoader struct {
@@ -20,7 +35,7 @@ func NewFileLoader(filePath string) *FileLoader {
 // Load implements interfaces.ConfigLoader
 func (f *FileLoader) Load() (*interfaces.Config, error) {
 	// Use the existing config.Load function
-	cfg, err := config.Load(f.filePath)
+	cfg, err := Load(f.filePath)
 	if err != nil {
 		return nil, err
 	}

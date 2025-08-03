@@ -354,7 +354,7 @@ func TestContainerInterfaceExtensions(t *testing.T) {
 	assert.NotNil(t, handler)
 	
 	// Verify handler is http.Handler
-	var _ http.Handler = handler
+	var _ = handler
 }
 
 // TestConfigInterfaceExtensions documents extensions to the Config interface

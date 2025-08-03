@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/jamesprial/nexus/config"
+	"github.com/jamesprial/nexus/internal/config"
 	"github.com/jamesprial/nexus/internal/auth"
 	"github.com/jamesprial/nexus/internal/interfaces"
 	"github.com/jamesprial/nexus/internal/logging"

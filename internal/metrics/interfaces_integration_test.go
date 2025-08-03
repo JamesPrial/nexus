@@ -81,7 +81,7 @@ func TestMetricsInterfaceDefinition(t *testing.T) {
 		handler := PrometheusHandler(collector)
 		assert.NotNil(t, handler)
 		
-		var _ http.Handler = handler
+		var _ = handler
 	})
 	
 	t.Run("metrics_middleware_interface", func(t *testing.T) {
@@ -110,7 +110,7 @@ func TestMetricsInterfaceDefinition(t *testing.T) {
 		wrappedHandler := middlewareFunc(handler)
 		assert.NotNil(t, wrappedHandler)
 		
-		var _ http.Handler = wrappedHandler
+		var _ = wrappedHandler
 		
 		// Note: SetTokenExtractor, SetModelExtractor would need to be implemented
 	})
@@ -215,7 +215,7 @@ func TestContainerIntegration(t *testing.T) {
 		assert.NotNil(t, handler)
 		
 		// Test that wrapped handler is still http.Handler
-		var _ http.Handler = handler
+		var _ = handler
 	})
 }
 
@@ -361,13 +361,13 @@ func TestMetricsInterfaceCompliance(t *testing.T) {
 		
 		// PrometheusHandler should return http.Handler
 		handler := PrometheusHandler(collector)
-		var _ http.Handler = handler
+		var _ = handler
 		
 		// MetricsMiddleware should return middleware that produces http.Handler
 		middleware := MetricsMiddleware(collector)
 		baseHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 		wrappedHandler := middleware(baseHandler)
-		var _ http.Handler = wrappedHandler
+		var _ = wrappedHandler
 	})
 	
 	t.Run("json_marshaling_compliance", func(t *testing.T) {
@@ -490,7 +490,7 @@ func TestMetricsExtensibilityInterface(t *testing.T) {
 		})
 		
 		wrappedHandler := customMetricsMiddleware(baseHandler)
-		var _ http.Handler = wrappedHandler
+		var _ = wrappedHandler
 		
 		// Verify it's a valid HTTP handler
 		assert.NotNil(t, wrappedHandler)

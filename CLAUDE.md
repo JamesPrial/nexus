@@ -24,9 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Agents are in the agents/ directory
-# Create symlink for auto-discovery (if not exists)
-mkdir -p .claude
-ln -s ../agents .claude/agents
+# Symlink has been created for auto-discovery at .claude/agents
 ```
 
 ### Primary Development Workflow

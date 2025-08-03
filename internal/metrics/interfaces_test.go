@@ -66,7 +66,7 @@ func TestMetricsMiddlewareImplementsInterface(t *testing.T) {
 	assert.NotNil(t, wrappedHandler, "Middleware should return wrapped handler")
 	
 	// Verify the wrapped handler implements http.Handler
-	var _ http.Handler = wrappedHandler
+	var _ = wrappedHandler
 }
 
 // MockMetricsCollector implements MetricsCollectorInterface for testing

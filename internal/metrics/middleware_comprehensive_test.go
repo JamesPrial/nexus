@@ -1,11 +1,8 @@
 package metrics
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
@@ -17,57 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// mockTokenExtractor implements context-based token and model extraction
-type mockTokenExtractor struct{}
-
-func (m *mockTokenExtractor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Extract model from request
-	model := "unknown"
-	if r.URL.Path == "/v1/chat/completions" {
-		// Try to parse request body for model
-		if r.Body != nil {
-			body, err := io.ReadAll(r.Body)
-			if err == nil {
-				r.Body = io.NopCloser(bytes.NewReader(body)) // Restore body for next middleware
-				
-				var requestData map[string]interface{}
-				if json.Unmarshal(body, &requestData) == nil {
-					if modelVal, ok := requestData["model"].(string); ok {
-						model = modelVal
-					}
-				}
-			}
-		}
-	} else if r.URL.Path == "/v1/embeddings" {
-		model = "text-embedding-ada-002"
-	}
-
-	// Add to context
-	ctx := context.WithValue(r.Context(), "model", model)
-	
-	// Simulate response with token count
-	tokens := 100 // Default
-	if strings.Contains(r.URL.Path, "completions") {
-		tokens = 150
-	} else if strings.Contains(r.URL.Path, "embeddings") {
-		tokens = 50
-	}
-	
-	ctx = context.WithValue(ctx, "tokens", tokens)
-	
-	// Mock successful response
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	response := map[string]interface{}{
-		"usage": map[string]interface{}{
-			"total_tokens": tokens,
-		},
-	}
-	_ = json.NewEncoder(w).Encode(response)
-	
-	*r = *r.WithContext(ctx)
-}
 
 // TestMetricsMiddlewareBasicFunctionality verifies basic middleware operation
 func TestMetricsMiddlewareBasicFunctionality(t *testing.T) {

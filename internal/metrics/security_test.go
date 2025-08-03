@@ -358,9 +358,6 @@ func TestMetricsTimingAttackPrevention(t *testing.T) {
 	shortAvg := shortTotal / 100
 	longAvg := longTotal / 100
 	
-	// Timing difference should be minimal (within reasonable variance)
-	_ = shortAvg - longAvg // Not used directly, only through ratio calculation
-	
 	// Allow up to 10x difference (should be much less in practice)
 	maxAllowedRatio := 10.0
 	actualRatio := float64(longAvg) / float64(shortAvg)

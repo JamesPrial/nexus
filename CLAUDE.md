@@ -2,6 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🛑 STOP! CRITICAL WORKFLOW REQUIREMENT 🛑
+
+**BEFORE ANY DEVELOPMENT WORK:**
+1. **READ AND FOLLOW**: `PREFLIGHT-CHECKLIST.md`
+2. **VERIFY**: You are NOT on main/master branch (`git branch --show-current`)
+3. **CREATE**: Feature branch with `git checkout -b feat/[name]` if needed
+
+**FAILURE TO FOLLOW THIS WORKFLOW WILL RESULT IN:**
+- Git hooks blocking your commits
+- Wasted work that must be redone
+- Violation of team development standards
+
+⚠️ **The pre-commit hook will PREVENT commits to main/master** ⚠️
+
 ## 🚀 Agent-First Development
 
 **IMPORTANT**: All code development MUST use the specialized agent system. Agents enforce TDD and maintain code quality standards.
@@ -20,15 +34,18 @@ ln -s ../agents .claude/agents
 **ALL feature development follows this MANDATORY flow:**
 
 ```
-1. Create feature branch → git checkout -b feat/feature-name
-2. nexus-test-designer → Creates comprehensive failing tests (RED)
-3. nexus-rapid-impl → Makes tests pass with minimal code (GREEN)  
-4. nexus-perf-optimizer → Optimizes if performance benchmarks fail
-5. code-refactor → Improves code quality (REFACTOR)
-6. nexus-integration-tester → Validates end-to-end functionality
-7. Push branch → git push -u origin feat/feature-name
-8. Create PR → Use GitHub CLI or web interface
+1. preflight-validator → Ensures proper branch and setup ⚠️ NEVER SKIP THIS
+2. Create feature branch → git checkout -b feat/feature-name (if not already on one)
+3. nexus-test-designer → Creates comprehensive failing tests (RED)
+4. nexus-rapid-impl → Makes tests pass with minimal code (GREEN)  
+5. nexus-perf-optimizer → Optimizes if performance benchmarks fail
+6. code-refactor → Improves code quality (REFACTOR)
+7. nexus-integration-tester → Validates end-to-end functionality
+8. Push branch → git push -u origin feat/feature-name
+9. Create PR → Use GitHub CLI or web interface
 ```
+
+**⚠️ CRITICAL: Each agent includes branch validation. If ANY agent detects you're on main/master, it will STOP and require branch creation first.**
 
 **Example Usage:**
 ```bash

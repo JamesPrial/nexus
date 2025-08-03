@@ -1,6 +1,6 @@
 # Nexus API Gateway
 
-Nexus is a high-performance, self-hosted API gateway for AI models. It provides a single, unified API for various AI providers, intelligent caching, request retries, and advanced routing logic.
+Nexus is a high-performance, self-hosted API gateway for AI models. It provides secure API key management, rate limiting, and token-based usage control for AI API access.
 
 ## Features
 
@@ -81,11 +81,7 @@ docker run -p 8080:8080 -v $(pwd)/config.yaml:/app/config.yaml nexus
 
 ### Quick Start
 
-The gateway will start on port 8080 by default. You can verify it's running:
-
-```bash
-curl http://localhost:8080/health
-```
+The gateway will start on port 8080 by default and begins proxying requests immediately.
 
 ### Command Line Options
 

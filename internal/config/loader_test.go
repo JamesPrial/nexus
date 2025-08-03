@@ -4,7 +4,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jamesprial/nexus/config"
 	"github.com/jamesprial/nexus/internal/interfaces"
 )
 
@@ -340,7 +339,7 @@ tls:
 	_ = tmpfile.Close()
 
 	// Load with config package directly
-	configPkg, err := config.Load(tmpfile.Name())
+	configPkg, err := Load(tmpfile.Name())
 	if err != nil {
 		t.Fatalf("Failed to load with config package: %v", err)
 	}

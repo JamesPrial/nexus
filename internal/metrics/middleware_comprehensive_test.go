@@ -307,13 +307,14 @@ func TestMetricsMiddlewareWithTokenExtraction(t *testing.T) {
 		var model string
 		var tokens int
 
-		if r.URL.Path == "/v1/chat/completions" {
+		switch r.URL.Path {
+		case "/v1/chat/completions":
 			model = "gpt-4"
 			tokens = 150
-		} else if r.URL.Path == "/v1/embeddings" {
+		case "/v1/embeddings":
 			model = "text-embedding-ada-002"
 			tokens = 50
-		} else {
+		default:
 			model = "unknown"
 			tokens = 0
 		}
@@ -576,7 +577,7 @@ func TestMetricsMiddlewareIntegrationWithRealRequests(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Simulate different response times based on endpoint
 		var delay time.Duration
-		var statusCode int = http.StatusOK
+		var statusCode = http.StatusOK
 		var responseBody string
 
 		switch r.URL.Path {

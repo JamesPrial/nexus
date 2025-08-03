@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/jamesprial/nexus/config"
+	"github.com/jamesprial/nexus/internal/config"
 	"github.com/jamesprial/nexus/internal/interfaces"
 )
 

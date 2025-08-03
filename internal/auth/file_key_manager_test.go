@@ -3,7 +3,7 @@ package auth
 import (
 	"testing"
 
-	"github.com/jamesprial/nexus/config"
+	"github.com/jamesprial/nexus/internal/config"
 )
 
 func TestNewFileKeyManager(t *testing.T) {

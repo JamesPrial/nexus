@@ -2,14 +2,35 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, 'feat/**', 'fix/**', 'docs/**', 'chore/**' ]
   pull_request:
     branches: [ main, develop ]
 
 jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: false
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          args: --timeout=5m
+
   test:
     name: Test
     runs-on: ubuntu-latest
+    needs: lint  # Only run tests if linting passes
     strategy:
       matrix:
         go-version: ['1.22', '1.23']
@@ -43,7 +64,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: test
+    needs: [lint, test]  # Only build if both linting and tests pass
 
     steps:
       - name: Checkout code
@@ -66,24 +87,3 @@ jobs:
 
       - name: Test help flag
         run: ./build/nexus -help
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-          cache: false
-
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=5m
-

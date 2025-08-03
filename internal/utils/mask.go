@@ -17,7 +17,11 @@ func MaskSensitive(s string, prefixLen int) string {
 	}
 	
 	if len(value) <= prefixLen {
-		return prefix + value
+		// For very short values, still apply some masking
+		if len(value) <= 3 {
+			return prefix + "***"
+		}
+		return prefix + value[:len(value)/2] + "***"
 	}
 	
 	// Show first prefixLen characters and mask the rest

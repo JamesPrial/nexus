@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jamesprial/nexus/internal/interfaces"
+	"github.com/jamesprial/nexus/internal/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -348,19 +349,20 @@ func TestSecurityInterfaceDesign(t *testing.T) {
 		// Test API key masking requirements
 		testCases := []struct {
 			input    string
-			expected string
 		}{
-			{"sk-1234567890abcdef", "sk-***...cdef"},
-			{"", ""},
-			{"short", "***"},
-			{"very-long-api-key-1234567890", "very-***...890"},
+			{"sk-1234567890abcdef"},
+			{"short"},
+			{"very-long-api-key-1234567890"},
 		}
 		
 		for _, tc := range testCases {
-			// This documents expected masking behavior
-			// Implementation would be in utils package
-			assert.NotEqual(t, tc.input, tc.expected, 
-				"Masked key should be different from original")
+			// Use actual masking function from utils package
+			masked := utils.MaskAPIKey(tc.input)
+			if tc.input != "" {
+				assert.NotEqual(t, tc.input, masked, 
+					"Masked key should be different from original")
+				assert.NotEmpty(t, masked, "Masked key should not be empty")
+			}
 		}
 	})
 	

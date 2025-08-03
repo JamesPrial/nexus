@@ -1,0 +1,83 @@
+name: Branch Protection Workflow
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches-ignore:
+      - 'feat/**'
+      - 'fix/**'
+      - 'docs/**'
+      - 'test/**'
+      - 'refactor/**'
+      - 'perf/**'
+      - 'chore/**'
+
+jobs:
+  validate-branch-name:
+    name: Validate Branch Name
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Check branch naming convention
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          echo "Checking branch: $BRANCH_NAME"
+          
+          # Valid branch prefixes
+          if [[ "$BRANCH_NAME" =~ ^(feat|fix|docs|test|refactor|perf|chore)/.+ ]]; then
+            echo "✅ Branch name follows convention: $BRANCH_NAME"
+          else
+            echo "❌ ERROR: Branch name does not follow convention!"
+            echo ""
+            echo "Branch must start with one of:"
+            echo "  - feat/     (new features)"
+            echo "  - fix/      (bug fixes)"
+            echo "  - docs/     (documentation)"
+            echo "  - test/     (tests)"
+            echo "  - refactor/ (code refactoring)"
+            echo "  - perf/     (performance improvements)"
+            echo "  - chore/    (maintenance)"
+            echo ""
+            echo "Example: feat/add-metrics-collection"
+            echo ""
+            echo "Your branch: $BRANCH_NAME"
+            exit 1
+          fi
+
+  block-direct-push:
+    name: Block Direct Push to Main
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Block push
+        run: |
+          echo "❌ ERROR: Direct push to main/master is forbidden!"
+          echo "All changes must go through a pull request."
+          exit 1
+
+  preflight-checklist:
+    name: Verify Preflight Checklist
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check for PREFLIGHT-CHECKLIST.md
+        run: |
+          if [ -f "PREFLIGHT-CHECKLIST.md" ]; then
+            echo "✅ PREFLIGHT-CHECKLIST.md exists"
+          else
+            echo "❌ ERROR: PREFLIGHT-CHECKLIST.md not found!"
+            echo "This file is required for development workflow."
+            exit 1
+          fi
+      
+      - name: Check for pre-commit hook
+        run: |
+          if [ -f ".git/hooks/pre-commit" ]; then
+            echo "✅ Pre-commit hook exists"
+          else
+            echo "⚠️  WARNING: Pre-commit hook not found"
+            echo "Run: chmod +x .git/hooks/pre-commit"
+          fi

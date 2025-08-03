@@ -21,13 +21,13 @@ func TestMaskSensitive(t *testing.T) {
 			name:      "short string",
 			input:     "abc",
 			prefixLen: 10,
-			expected:  "abc",
+			expected:  "***",
 		},
 		{
 			name:      "exact length",
 			input:     "1234567890",
 			prefixLen: 10,
-			expected:  "1234567890",
+			expected:  "12345***",
 		},
 		{
 			name:      "long string",
@@ -45,7 +45,7 @@ func TestMaskSensitive(t *testing.T) {
 			name:      "bearer with short token",
 			input:     "Bearer abc",
 			prefixLen: 10,
-			expected:  "Bearer abc",
+			expected:  "Bearer ***",
 		},
 		{
 			name:      "zero prefix length",
@@ -79,7 +79,7 @@ func TestMaskAPIKey(t *testing.T) {
 		{
 			name:     "short key",
 			input:    "key123",
-			expected: "key123",
+			expected: "key***",
 		},
 		{
 			name:     "standard API key",

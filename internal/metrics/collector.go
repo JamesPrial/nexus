@@ -82,7 +82,10 @@ func (c *MetricsCollector) initializeHistogram() {
 // per-key, per-endpoint, and per-model breakdowns.
 func (c *MetricsCollector) RecordRequest(apiKey string, endpoint string, model string, tokens int, statusCode int, duration time.Duration) {
 	// Sanitize and validate inputs
-	apiKey = c.sanitizeInput(apiKey, "unknown")
+	// For API keys, preserve empty strings but sanitize non-empty ones
+	if apiKey != "" {
+		apiKey = c.sanitizeInput(apiKey, "unknown")
+	}
 	endpoint = c.sanitizeInput(endpoint, "unknown")
 	model = c.sanitizeInput(model, "unknown")
 	if tokens < 0 {

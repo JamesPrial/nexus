@@ -41,7 +41,7 @@ func TestMetricsEndToEndFlow(t *testing.T) {
 				},
 				"model": "gpt-4",
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			
 		case "/v1/completions":
 			time.Sleep(150 * time.Millisecond)
@@ -56,7 +56,7 @@ func TestMetricsEndToEndFlow(t *testing.T) {
 				},
 				"model": "gpt-3.5-turbo",
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			
 		case "/v1/embeddings":
 			time.Sleep(100 * time.Millisecond)
@@ -71,15 +71,15 @@ func TestMetricsEndToEndFlow(t *testing.T) {
 				},
 				"model": "text-embedding-ada-002",
 			}
-			json.NewEncoder(w).Encode(response)
+			_ = json.NewEncoder(w).Encode(response)
 			
 		case "/health":
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"status":"healthy"}`))
+			_, _ = w.Write([]byte(`{"status":"healthy"}`))
 			
 		default:
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{"error":"endpoint not found"}`))
+			_, _ = w.Write([]byte(`{"error":"endpoint not found"}`))
 		}
 	})
 	
@@ -272,7 +272,7 @@ func TestMetricsWithAuthenticatedEndpoint(t *testing.T) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader != "Bearer admin-key" && authHeader != "Bearer monitor-key" {
 			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(`{"error":"unauthorized"}`))
+			_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 			return
 		}
 		
@@ -282,13 +282,13 @@ func TestMetricsWithAuthenticatedEndpoint(t *testing.T) {
 		case "json":
 			w.Header().Set("Content-Type", "application/json")
 			jsonData := ExportJSON(collector)
-			w.Write(jsonData)
+			_, _ = w.Write(jsonData)
 		case "prometheus", "":
 			prometheusHandler := PrometheusHandler(collector)
 			prometheusHandler.ServeHTTP(w, r)
 		default:
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"error":"invalid format"}`))
+			_, _ = w.Write([]byte(`{"error":"invalid format"}`))
 		}
 	})
 	
@@ -405,7 +405,7 @@ func TestMetricsHighThroughputScenario(t *testing.T) {
 	// Simple fast handler
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		_, _ = w.Write([]byte("ok"))
 	})
 	
 	wrappedHandler := middleware(handler)
@@ -586,7 +586,7 @@ func TestMetricsErrorRecovery(t *testing.T) {
 			// Simulate large response
 			largeData := strings.Repeat("x", 1024*1024) // 1MB
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(largeData))
+			_, _ = w.Write([]byte(largeData))
 		default:
 			w.WriteHeader(http.StatusOK)
 		}

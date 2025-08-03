@@ -97,17 +97,15 @@ func MetricsMiddleware(collector interfaces.MetricsCollector) func(http.Handler)
 			model := extractModel(r)
 			tokens := extractTokens(r)
 
-			// Record metrics if we have an API key
-			if apiKey != "" {
-				collector.RecordRequest(
-					apiKey,
-					endpoint,
-					model,
-					tokens,
-					recorder.Status(),
-					duration,
-				)
-			}
+			// Record metrics for all requests (including empty API keys)
+			collector.RecordRequest(
+				apiKey,
+				endpoint,
+				model,
+				tokens,
+				recorder.Status(),
+				duration,
+			)
 		})
 	}
 }
@@ -128,7 +126,7 @@ func extractAPIKey(r *http.Request) string {
 
 	// Handle Bearer token format
 	if strings.HasPrefix(auth, "Bearer ") {
-		return strings.TrimPrefix(auth, "Bearer ")
+		return strings.TrimSpace(strings.TrimPrefix(auth, "Bearer "))
 	}
 	
 	// Return header value as-is for other formats
@@ -302,9 +300,8 @@ func ConfigurableMetricsMiddleware(collector interfaces.MetricsCollector, config
 			model := extractModel(r)
 			tokens := extractTokens(r)
 
-			if apiKey != "" {
-				collector.RecordRequest(apiKey, endpoint, model, tokens, recorder.Status(), duration)
-			}
+			// Record metrics for all requests (including empty API keys)
+			collector.RecordRequest(apiKey, endpoint, model, tokens, recorder.Status(), duration)
 		})
 	}
 }

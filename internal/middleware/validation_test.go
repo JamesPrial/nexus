@@ -106,7 +106,7 @@ func TestRequestValidationMiddleware(t *testing.T) {
 			// Create a test handler that just returns OK
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("OK"))
+				_, _ = w.Write([]byte("OK"))
 			})
 
 			// Wrap with validation middleware
@@ -143,7 +143,7 @@ func TestRequestValidationMiddleware_PreservesBody(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Read the body in the handler
 		buf := new(bytes.Buffer)
-		buf.ReadFrom(r.Body)
+		_, _ = buf.ReadFrom(r.Body)
 		body := buf.String()
 		
 		if body != originalBody {

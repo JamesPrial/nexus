@@ -585,7 +585,7 @@ func BenchmarkRealWorldScenario(b *testing.B) {
 				
 				w.WriteHeader(http.StatusOK)
 				if ep.tokens > 0 {
-					_, _ = w.Write([]byte(fmt.Sprintf(`{"usage":{"total_tokens":%d}}`, ep.tokens)))
+					_, _ = fmt.Fprintf(w, `{"usage":{"total_tokens":%d}}`, ep.tokens)
 				} else {
 					_, _ = w.Write([]byte(`{"status":"ok"}`))
 				}

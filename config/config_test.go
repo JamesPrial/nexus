@@ -167,7 +167,7 @@ limits:
 			if err != nil {
 				t.Fatalf("Failed to create temp file: %v", err)
 			}
-			defer os.Remove(tmpfile.Name())
+			defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 			if _, err := tmpfile.Write([]byte(tt.content)); err != nil {
 				t.Fatalf("Failed to write to temp file: %v", err)
@@ -230,7 +230,7 @@ func TestLoad_FileErrors(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to create temp file: %v", err)
 				}
-				tmpfile.Close()
+				_ = tmpfile.Close()
 				
 				// Remove read permissions
 				if err := os.Chmod(tmpfile.Name(), 0000); err != nil {
@@ -249,7 +249,7 @@ func TestLoad_FileErrors(t *testing.T) {
 			
 			// Clean up if it's a temp file/dir
 			if path != "/path/that/does/not/exist/config.yaml" {
-				defer os.RemoveAll(path)
+				defer func() { _ = os.RemoveAll(path) }()
 			}
 
 			_, err := Load(path)
@@ -315,12 +315,12 @@ tls:
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}
-		defer os.Remove(tmpfile.Name())
+		defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 		if _, err := tmpfile.Write([]byte(content)); err != nil {
 			t.Fatalf("Failed to write to temp file: %v", err)
 		}
-		tmpfile.Close()
+		_ = tmpfile.Close()
 
 		cfg, err := Load(tmpfile.Name())
 		if err != nil {
@@ -351,12 +351,12 @@ limits:
 		if err != nil {
 			t.Fatalf("Failed to create temp file: %v", err)
 		}
-		defer os.Remove(tmpfile.Name())
+		defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 		if _, err := tmpfile.Write([]byte(content)); err != nil {
 			t.Fatalf("Failed to write to temp file: %v", err)
 		}
-		tmpfile.Close()
+		_ = tmpfile.Close()
 
 		cfg, err := Load(tmpfile.Name())
 		if err != nil {
@@ -395,12 +395,12 @@ tls:
 	if err != nil {
 		b.Fatalf("Failed to create temp file: %v", err)
 	}
-	defer os.Remove(tmpfile.Name())
+	defer func() { _ = os.Remove(tmpfile.Name()) }()
 
 	if _, err := tmpfile.Write([]byte(content)); err != nil {
 		b.Fatalf("Failed to write to temp file: %v", err)
 	}
-	tmpfile.Close()
+	_ = tmpfile.Close()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

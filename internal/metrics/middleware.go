@@ -38,6 +38,10 @@ func (r *statusRecorder) WriteHeader(status int) {
 
 // Write captures the response size and forwards the call
 func (r *statusRecorder) Write(data []byte) (int, error) {
+	// If no status has been set, default to 200 (as per HTTP spec)
+	if r.status == 0 {
+		r.status = http.StatusOK
+	}
 	size, err := r.ResponseWriter.Write(data)
 	r.size += size
 	return size, err

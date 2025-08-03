@@ -488,9 +488,6 @@ func TestMetricsMiddlewareErrorPropagation(t *testing.T) {
 
 // TestMetricsMiddlewareResponseWriterWrapping verifies statusRecorder functionality
 func TestMetricsMiddlewareResponseWriterWrapping(t *testing.T) {
-	collector := NewMetricsCollector()
-	middleware := MetricsMiddleware(collector)
-
 	testCases := []struct {
 		name         string
 		writeActions func(w http.ResponseWriter)
@@ -534,6 +531,10 @@ func TestMetricsMiddlewareResponseWriterWrapping(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			// Create a fresh collector for each test case to ensure isolation
+			collector := NewMetricsCollector()
+			middleware := MetricsMiddleware(collector)
+			
 			handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				tc.writeActions(w)
 			})

@@ -137,6 +137,22 @@ docker:
 	docker build -t $(BINARY_NAME):$(VERSION) .
 	docker tag $(BINARY_NAME):$(VERSION) $(BINARY_NAME):latest
 
+# Run linter
+.PHONY: lint
+lint:
+	@echo "Running golangci-lint..."
+	@if ! command -v golangci-lint >/dev/null 2>&1; then \
+		echo "golangci-lint not found. Installing..."; \
+		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin; \
+	fi
+	golangci-lint run --timeout=5m
+
+# Run linter and automatically fix issues
+.PHONY: lint-fix
+lint-fix:
+	@echo "Running golangci-lint with auto-fix..."
+	golangci-lint run --fix --timeout=5m
+
 # Show help
 .PHONY: help
 help:
@@ -148,6 +164,8 @@ help:
 	@echo "  uninstall    - Remove binary from /usr/local/bin"
 	@echo "  test         - Run tests"
 	@echo "  test-coverage- Run tests with coverage report"
+	@echo "  lint         - Run golangci-lint"
+	@echo "  lint-fix     - Run golangci-lint with auto-fix"
 	@echo "  clean        - Clean build artifacts"
 	@echo "  deps         - Download dependencies"
 	@echo "  dev          - Start development server"

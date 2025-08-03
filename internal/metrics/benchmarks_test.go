@@ -224,7 +224,7 @@ func BenchmarkMetricsMiddleware(b *testing.B) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		_, _ = w.Write([]byte("ok"))
 	})
 
 	wrappedHandler := middleware(handler)
@@ -248,7 +248,7 @@ func BenchmarkMetricsMiddlewareParallel(b *testing.B) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		_, _ = w.Write([]byte("ok"))
 	})
 
 	wrappedHandler := middleware(handler)
@@ -452,7 +452,7 @@ func BenchmarkStatusRecorderOverhead(b *testing.B) {
 			name: "with_body",
 			handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("response body"))
+				_, _ = w.Write([]byte("response body"))
 			}),
 		},
 		{
@@ -461,7 +461,7 @@ func BenchmarkStatusRecorderOverhead(b *testing.B) {
 				w.Header().Set("Content-Type", "application/json")
 				w.Header().Set("X-Custom-Header", "value")
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"result":"success"}`))
+				_, _ = w.Write([]byte(`{"result":"success"}`))
 			}),
 		},
 	}
@@ -525,7 +525,7 @@ func BenchmarkEndToEndLatency(b *testing.B) {
 		
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"result":"success","tokens":150}`))
+		_, _ = w.Write([]byte(`{"result":"success","tokens":150}`))
 	})
 
 	wrappedHandler := middleware(handler)
@@ -585,9 +585,9 @@ func BenchmarkRealWorldScenario(b *testing.B) {
 				
 				w.WriteHeader(http.StatusOK)
 				if ep.tokens > 0 {
-					w.Write([]byte(fmt.Sprintf(`{"usage":{"total_tokens":%d}}`, ep.tokens)))
+					_, _ = w.Write([]byte(fmt.Sprintf(`{"usage":{"total_tokens":%d}}`, ep.tokens)))
 				} else {
-					w.Write([]byte(`{"status":"ok"}`))
+					_, _ = w.Write([]byte(`{"status":"ok"}`))
 				}
 				return
 			}

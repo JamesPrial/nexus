@@ -301,7 +301,7 @@ func handleCSVExport(w http.ResponseWriter, exporter *MetricsExporter, config *i
 	
 	w.Header().Set("Content-Type", "text/csv")
 	w.Header().Set("Content-Disposition", "attachment; filename=metrics.csv")
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 // handleJSONExport handles JSON format export requests
@@ -318,7 +318,7 @@ func handleJSONExport(w http.ResponseWriter, exporter *MetricsExporter, config *
 	}
 	
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	_, _ = w.Write(data)
 }
 
 // handlePrometheusExport handles Prometheus format export requests

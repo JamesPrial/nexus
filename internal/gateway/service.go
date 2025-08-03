@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -37,6 +38,18 @@ func (s *Service) Start() error {
 	
 	// Create mux for routing
 	mux := http.NewServeMux()
+	
+	// Register health endpoint
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		health := map[string]string{
+			"status":  "healthy",
+			"version": "1.0.0",
+		}
+		if err := json.NewEncoder(w).Encode(health); err != nil {
+			s.logger.Error("Failed to encode health response", map[string]any{"error": err})
+		}
+	})
 	
 	// Register metrics endpoints if metrics are enabled
 	if config.Metrics.Enabled {
@@ -108,11 +121,37 @@ func (s *Service) Stop() error {
 		s.logger.Info("Stopping Nexus gateway", map[string]any{})
 	}
 
+	// Export metrics before shutdown if enabled
+	config := s.container.Config()
+	if config != nil && config.Metrics.Enabled {
+		collector := s.container.MetricsCollector()
+		if collector != nil {
+			metricsData := collector.GetMetrics()
+			if s.logger != nil {
+				s.logger.Info("Final metrics before shutdown", metricsData)
+			}
+		}
+	}
+
 	// Create context with timeout for graceful shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	return s.server.Shutdown(ctx)
+	// Set the server state to shutting down
+	s.server.SetKeepAlivesEnabled(false)
+
+	// Shutdown will wait for active connections to complete
+	shutdownErr := s.server.Shutdown(ctx)
+
+	if s.logger != nil {
+		if shutdownErr != nil {
+			s.logger.Error("Error during graceful shutdown", map[string]any{"error": shutdownErr})
+		} else {
+			s.logger.Info("Graceful shutdown completed", map[string]any{})
+		}
+	}
+
+	return shutdownErr
 }
 
 // Health implements interfaces.Gateway.Health

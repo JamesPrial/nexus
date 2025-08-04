@@ -8,6 +8,8 @@ Nexus is a high-performance, self-hosted API gateway for AI models. It provides 
 - **Secure API Key Management:** Centralized key storage eliminates accidental exposure of upstream API keys by using nexus-specific client keys.
 - **Rate Limiting:** Protect your upstream services with a configurable, per-API-key rate limiter.
 - **Token-Based Limiting:** Protect your wallet with intelligent rate limiting based on actual language model token consumption.
+- **Health Monitoring:** Built-in health endpoint for service monitoring and orchestration.
+- **Graceful Shutdown:** Proper connection draining and metrics flushing on shutdown.
 - **Self-Hosted:** Keep your data private and your latency low by deploying Nexus within your own infrastructure.
 - **Open-Source:** Nexus is open-source and licensed under the MIT license.
 
@@ -83,6 +85,13 @@ docker run -p 8080:8080 -v $(pwd)/config.yaml:/app/config.yaml nexus
 
 The gateway will start on port 8080 by default and begins proxying requests immediately.
 
+**Health Check:**
+```bash
+# Check if the service is healthy
+curl http://localhost:8080/health
+# Returns: {"status":"healthy","version":"1.0.0","timestamp":"2025-01-03T12:00:00Z"}
+```
+
 ### Command Line Options
 
 ```bash
@@ -133,6 +142,37 @@ response = openai.ChatCompletion.create(
 api_keys:
   "nexus-client-demo": "sk-your-real-openai-key"
   "nexus-client-prod": "sk-your-production-key"
+```
+
+## Metrics and Monitoring
+
+Nexus includes built-in metrics collection for monitoring request patterns and token usage:
+
+```yaml
+# config.yaml
+metrics:
+  enabled: true
+  export_path: "./metrics"
+  export_interval: "5m"
+  export_format: "json"  # or "csv"
+```
+
+**Note:** There is a known issue where the metrics collector may not initialize properly when enabled. See [FUTURE_IMPROVEMENTS.md](docs/FUTURE_IMPROVEMENTS.md) for details.
+
+## Development
+
+Nexus maintains comprehensive test coverage (73%) with a focus on critical paths:
+
+```bash
+# Run tests
+make test
+
+# Generate coverage report
+make test-coverage
+# Opens coverage.html in your browser
+
+# Run linter
+make lint
 ```
 
 ## Contributing

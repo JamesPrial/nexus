@@ -37,10 +37,15 @@ Thumbs.db
 
 # Built binaries
 nexus
+/nexus
+nexus-*
 
 # Runtime config (if different from default)
 config.local.yaml
 config.prod.yaml
+
+# Metrics output
+metrics/
 
 # Docker artifacts
 .dockerignore

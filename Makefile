@@ -33,24 +33,24 @@ build:
 .PHONY: build-all
 build-all: clean
 	@echo "Building for multiple platforms..."
-	@mkdir -p $(DIST_DIR)
+	@mkdir -p $(BUILD_DIR)
 	
 	# Linux AMD64
-	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-linux-amd64 ./cmd/gateway
+	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-amd64 ./cmd/gateway
 	
 	# Linux ARM64  
-	GOOS=linux GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-linux-arm64 ./cmd/gateway
+	GOOS=linux GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-linux-arm64 ./cmd/gateway
 	
 	# macOS AMD64
-	GOOS=darwin GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-darwin-amd64 ./cmd/gateway
+	GOOS=darwin GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-amd64 ./cmd/gateway
 	
 	# macOS ARM64 (Apple Silicon)
-	GOOS=darwin GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-darwin-arm64 ./cmd/gateway
+	GOOS=darwin GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-darwin-arm64 ./cmd/gateway
 	
 	# Windows AMD64
-	GOOS=windows GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(DIST_DIR)/$(BINARY_NAME)-windows-amd64.exe ./cmd/gateway
+	GOOS=windows GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-amd64.exe ./cmd/gateway
 	
-	@echo "Cross-compilation complete. Binaries in $(DIST_DIR)/"
+	@echo "Cross-compilation complete. Binaries in $(BUILD_DIR)/"
 
 # Create release archives
 .PHONY: release
@@ -137,21 +137,37 @@ docker:
 	docker build -t $(BINARY_NAME):$(VERSION) .
 	docker tag $(BINARY_NAME):$(VERSION) $(BINARY_NAME):latest
 
+# Find golangci-lint in PATH or /tmp
+GOLANGCI_LINT := $(shell which golangci-lint 2>/dev/null || echo "/tmp/golangci-lint")
+
 # Run linter
 .PHONY: lint
 lint:
 	@echo "Running golangci-lint..."
-	@if ! command -v golangci-lint >/dev/null 2>&1; then \
+	@if [ ! -f "$(GOLANGCI_LINT)" ] && ! command -v golangci-lint >/dev/null 2>&1; then \
 		echo "golangci-lint not found. Installing..."; \
-		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin; \
+		curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.54.2; \
 	fi
-	golangci-lint run --timeout=5m
+	$(GOLANGCI_LINT) run --timeout=5m
 
 # Run linter and automatically fix issues
 .PHONY: lint-fix
 lint-fix:
 	@echo "Running golangci-lint with auto-fix..."
-	golangci-lint run --fix --timeout=5m
+	$(GOLANGCI_LINT) run --fix --timeout=5m
+
+# Run benchmarks
+.PHONY: bench
+bench:
+	@echo "Running benchmarks..."
+	$(GOTEST) -bench=. -benchmem ./...
+
+# Install development tools
+.PHONY: install-tools
+install-tools:
+	@echo "Installing development tools..."
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.54.2
+	@echo "Tools installed successfully"
 
 # Show help
 .PHONY: help
